@@ -6,6 +6,10 @@ A prototype of a turn-based 2D strategy game inspired by Imperialism, built on *
 
 ## Screenshots
 
+### Main Menu
+![Main Menu](screenshots/menu.png)
+
+### Game
 ![Game Window](screenshots/game_window.png)
 ![Game Window 2](screenshots/game_window_2.png)
 
