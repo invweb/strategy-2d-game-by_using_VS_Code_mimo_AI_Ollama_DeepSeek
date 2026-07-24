@@ -22,6 +22,12 @@ class MenuScreen(private val game: StrategyGame) : ScreenAdapter() {
 
     private lateinit var stage: Stage
     private lateinit var skin: Skin
+    private var selectedSize = com.example.strategy.platform.GameFactory.MapSize.MEDIUM
+    private var selectedTerrain = com.example.strategy.platform.GameFactory.TerrainStyle.BALANCED
+    private var selectedDifficulty = com.example.strategy.model.Difficulty.NORMAL
+    private lateinit var sizeLabel: Label
+    private lateinit var terrainLabel: Label
+    private lateinit var difficultyLabel: Label
 
     override fun show() {
         skin = createSkin()
@@ -30,7 +36,6 @@ class MenuScreen(private val game: StrategyGame) : ScreenAdapter() {
 
         val root = Table(skin).apply { setFillParent(true) }
 
-        // Title
         val title = Label("STRATEGY", skin)
         title.setFontScale(3f)
         title.color = Color(0.9f, 0.8f, 0.2f, 1f)
@@ -39,14 +44,112 @@ class MenuScreen(private val game: StrategyGame) : ScreenAdapter() {
         val subtitle = Label("2D Turn-Based Strategy", skin)
         subtitle.setFontScale(1.2f)
         subtitle.color = Color(0.7f, 0.7f, 0.7f, 1f)
-        root.add(subtitle).padBottom(60f).row()
+        root.add(subtitle).padBottom(40f).row()
 
-        // Buttons
+        val configPanel = Table(skin).apply { defaults().pad(5f) }
+
+        val sizeTitle = Label("Map Size:", skin)
+        sizeTitle.color = Color.CYAN
+        configPanel.add(sizeTitle)
+
+        val sizes = com.example.strategy.platform.GameFactory.MapSize.entries
+        var sizeIdx = sizes.indexOf(selectedSize)
+        sizeLabel = Label(selectedSize.name, skin)
+        sizeLabel.color = Color.WHITE
+        val prevSizeBtn = TextButton("<", skin)
+        prevSizeBtn.addListener(object : ClickListener() {
+            override fun clicked(event: InputEvent?, x: Float, y: Float) {
+                sizeIdx = (sizeIdx - 1 + sizes.size) % sizes.size
+                selectedSize = sizes[sizeIdx]
+                sizeLabel.setText(selectedSize.name)
+            }
+        })
+        val nextSizeBtn = TextButton(">", skin)
+        nextSizeBtn.addListener(object : ClickListener() {
+            override fun clicked(event: InputEvent?, x: Float, y: Float) {
+                sizeIdx = (sizeIdx + 1) % sizes.size
+                selectedSize = sizes[sizeIdx]
+                sizeLabel.setText(selectedSize.name)
+            }
+        })
+        configPanel.add(prevSizeBtn).width(40f)
+        configPanel.add(sizeLabel).width(100f)
+        configPanel.add(nextSizeBtn).width(40f).row()
+
+        val terrainTitle = Label("Terrain:", skin)
+        terrainTitle.color = Color.CYAN
+        configPanel.add(terrainTitle)
+
+        val terrains = com.example.strategy.platform.GameFactory.TerrainStyle.entries
+        var terrIdx = terrains.indexOf(selectedTerrain)
+        terrainLabel = Label(selectedTerrain.name, skin)
+        terrainLabel.color = Color.WHITE
+        val prevTerrBtn = TextButton("<", skin)
+        prevTerrBtn.addListener(object : ClickListener() {
+            override fun clicked(event: InputEvent?, x: Float, y: Float) {
+                terrIdx = (terrIdx - 1 + terrains.size) % terrains.size
+                selectedTerrain = terrains[terrIdx]
+                terrainLabel.setText(selectedTerrain.name)
+            }
+        })
+        val nextTerrBtn = TextButton(">", skin)
+        nextTerrBtn.addListener(object : ClickListener() {
+            override fun clicked(event: InputEvent?, x: Float, y: Float) {
+                terrIdx = (terrIdx + 1) % terrains.size
+                selectedTerrain = terrains[terrIdx]
+                terrainLabel.setText(selectedTerrain.name)
+            }
+        })
+        configPanel.add(prevTerrBtn).width(40f)
+        configPanel.add(terrainLabel).width(100f)
+        configPanel.add(nextTerrBtn).width(40f).row()
+
+        val diffTitle = Label("Difficulty:", skin)
+        diffTitle.color = Color.CYAN
+        configPanel.add(diffTitle)
+
+        val diffs = com.example.strategy.model.Difficulty.entries
+        var diffIdx = diffs.indexOf(selectedDifficulty)
+        difficultyLabel = Label(selectedDifficulty.displayName, skin)
+        difficultyLabel.color = Color.WHITE
+        val prevDiffBtn = TextButton("<", skin)
+        prevDiffBtn.addListener(object : ClickListener() {
+            override fun clicked(event: InputEvent?, x: Float, y: Float) {
+                diffIdx = (diffIdx - 1 + diffs.size) % diffs.size
+                selectedDifficulty = diffs[diffIdx]
+                difficultyLabel.setText(selectedDifficulty.displayName)
+            }
+        })
+        val nextDiffBtn = TextButton(">", skin)
+        nextDiffBtn.addListener(object : ClickListener() {
+            override fun clicked(event: InputEvent?, x: Float, y: Float) {
+                diffIdx = (diffIdx + 1) % diffs.size
+                selectedDifficulty = diffs[diffIdx]
+                difficultyLabel.setText(selectedDifficulty.displayName)
+            }
+        })
+        configPanel.add(prevDiffBtn).width(40f)
+        configPanel.add(difficultyLabel).width(100f)
+        configPanel.add(nextDiffBtn).width(40f).row()
+
+        root.add(configPanel).padBottom(30f).row()
+
         val newGameBtn = makeButton("NEW GAME", Color(0.3f, 0.6f, 0.3f, 1f))
         newGameBtn.addListener(object : ClickListener() {
             override fun clicked(event: InputEvent?, x: Float, y: Float) {
-                game.gameState = com.example.strategy.platform.GameFactory.createDefaultGameState()
+                game.gameState = com.example.strategy.platform.GameFactory.createGameState(selectedSize, selectedTerrain, selectedDifficulty)
                 game.setScreen(GameScreen(game))
+            }
+        })
+
+        val loadBtn = makeButton("LOAD GAME", Color(0.3f, 0.5f, 0.7f, 1f))
+        loadBtn.addListener(object : ClickListener() {
+            override fun clicked(event: InputEvent?, x: Float, y: Float) {
+                val loaded = SaveManager.load()
+                if (loaded != null) {
+                    game.gameState = loaded
+                    game.setScreen(GameScreen(game))
+                }
             }
         })
 
@@ -58,9 +161,9 @@ class MenuScreen(private val game: StrategyGame) : ScreenAdapter() {
         })
 
         root.add(newGameBtn).width(300f).height(60f).padBottom(15f).row()
+        root.add(loadBtn).width(300f).height(60f).padBottom(15f).row()
         root.add(quitBtn).width(300f).height(60f).padBottom(15f).row()
 
-        // Footer
         val footer = Label("Ollama AI Powered  |  Kotlin + libGDX", skin)
         footer.setFontScale(0.8f)
         footer.color = Color(0.5f, 0.5f, 0.5f, 1f)

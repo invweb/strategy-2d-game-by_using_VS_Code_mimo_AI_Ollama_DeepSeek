@@ -21,7 +21,8 @@ data class Region(
     val ownerId: Int? = null,
     val population: Int = 10,
     val resources: Resources = Resources(food = 5),
-    val buildings: List<Building> = emptyList()
+    val buildings: List<Building> = emptyList(),
+    val units: UnitStack = UnitStack()
 )
 
 @Serializable

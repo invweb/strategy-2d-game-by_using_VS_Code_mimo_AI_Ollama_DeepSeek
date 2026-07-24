@@ -8,5 +8,6 @@ data class Player(
     val name: String,
     val color: String,
     val resources: Resources = Resources(food = 50, wood = 30, stone = 20, gold = 100),
-    val isHuman: Boolean = false
+    val isHuman: Boolean = false,
+    val techs: TechState = TechState()
 )

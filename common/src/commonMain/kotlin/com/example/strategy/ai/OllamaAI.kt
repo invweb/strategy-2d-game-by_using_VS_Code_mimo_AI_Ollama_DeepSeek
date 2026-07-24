@@ -67,6 +67,14 @@ object OllamaAI {
             "  ${r.name}(${r.terrain.name}): pop=${r.population}, owner=${r.ownerId}"
         }
 
+        val diplo = state.diplomacy.getRelation(player.id, 1)
+        val diploStatus = when (diplo.status) {
+            DiplomacyStatus.ALLIED -> "ALLIED"
+            DiplomacyStatus.TRADE_PARTNERS -> "TRADE_PARTNERS"
+            DiplomacyStatus.ENEMY -> "ENEMY"
+            DiplomacyStatus.NEUTRAL -> "NEUTRAL"
+        }
+
         return """You are an AI ruler in a turn-based strategy game.
 
 YOUR STATE:
@@ -79,15 +87,21 @@ $regionInfo
 ENEMY REGIONS:
 $enemyInfo
 
+DIPLOMACY: $diploStatus (trade=${diplo.tradeActive})
+
 AVAILABLE ACTIONS (choose exactly ONE):
   BUILD_FARM:REGION_ID — costs 10 Food + 5 Wood (region must have no buildings)
   BUILD_BARRACKS:REGION_ID — costs 15 Wood + 10 Stone + 10 Gold (region must have no buildings)
   BUILD_MINE:REGION_ID — costs 5 Wood + 15 Stone + 5 Iron (region must have no buildings)
   RECRUIT:REGION_ID — costs 10 Food + 5 Gold (requires Barracks in region)
   DEVELOP:REGION_ID — costs 10 Gold, +3 population
+  PROPOSE_ALLIANCE:1 — form alliance with enemy
+  BREAK_ALLIANCE:1 — break existing alliance
+  PROPOSE_TRADE:1 — establish trade route with enemy
+  CANCEL_TRADE:1 — cancel trade route
   END_TURN — skip actions
 
-Reply with ONLY one line in format: ACTION:REGION_ID
+Reply with ONLY one line in format: ACTION:TARGET_ID
 Example: BUILD_FARM:3"""
     }
 
@@ -104,7 +118,7 @@ Example: BUILD_FARM:3"""
         val lines = responseText.lines()
         for (line in lines) {
             val trimmed = line.trim().uppercase()
-            val match = Regex("""(BUILD_FARM|BUILD_BARRACKS|BUILD_MINE|RECRUIT|DEVELOP|END_TURN)[:\s]+(\d+)""").find(trimmed)
+            val match = Regex("""(BUILD_FARM|BUILD_BARRACKS|BUILD_MINE|RECRUIT|DEVELOP|PROPOSE_ALLIANCE|BREAK_ALLIANCE|PROPOSE_TRADE|CANCEL_TRADE|END_TURN)[:\s]+(\d+)""").find(trimmed)
             if (match != null) {
                 val actionStr = match.groupValues[1]
                 val regionId = match.groupValues[2].toIntOrNull() ?: continue
@@ -112,6 +126,10 @@ Example: BUILD_FARM:3"""
                     "BUILD_FARM", "BUILD_BARRACKS", "BUILD_MINE" -> ActionQueue.ActionType.BUILD
                     "RECRUIT" -> ActionQueue.ActionType.RECRUIT
                     "DEVELOP" -> ActionQueue.ActionType.DEVELOP
+                    "PROPOSE_ALLIANCE" -> ActionQueue.ActionType.PROPOSE_ALLIANCE
+                    "BREAK_ALLIANCE" -> ActionQueue.ActionType.BREAK_ALLIANCE
+                    "PROPOSE_TRADE" -> ActionQueue.ActionType.PROPOSE_TRADE
+                    "CANCEL_TRADE" -> ActionQueue.ActionType.CANCEL_TRADE
                     "END_TURN" -> return null
                     else -> continue
                 }
@@ -122,8 +140,16 @@ Example: BUILD_FARM:3"""
                     else -> ""
                 }
                 val region = state.map.getRegionById(regionId)
-                if (region != null && region.ownerId == player.id) {
+                if (actionType == ActionQueue.ActionType.BUILD) {
+                    if (region != null && region.ownerId == player.id) {
+                        return AIAction(actionType, regionId, param)
+                    }
+                } else if (actionType in listOf(ActionQueue.ActionType.PROPOSE_ALLIANCE, ActionQueue.ActionType.BREAK_ALLIANCE, ActionQueue.ActionType.PROPOSE_TRADE, ActionQueue.ActionType.CANCEL_TRADE)) {
                     return AIAction(actionType, regionId, param)
+                } else {
+                    if (region != null && region.ownerId == player.id) {
+                        return AIAction(actionType, regionId, param)
+                    }
                 }
             }
         }
@@ -134,25 +160,70 @@ Example: BUILD_FARM:3"""
     // Simple fallback if Ollama fails or returns invalid response
     private fun fallbackAction(state: GameState, player: Player): AIAction? {
         val ownedRegions = state.map.regions.filter { it.ownerId == player.id }
+        val enemyRegions = state.map.regions.filter { it.ownerId != null && it.ownerId != player.id && it.terrain != TerrainType.WATER }
 
-        if (player.resources.canAfford(Resources(food = 10, wood = 5))) {
-            val emptyRegion = ownedRegions.firstOrNull { it.buildings.isEmpty() && it.terrain != TerrainType.WATER }
-            if (emptyRegion != null) {
-                return AIAction(ActionQueue.ActionType.BUILD, emptyRegion.id, "FARM")
+        val emptyRegions = ownedRegions.filter { it.buildings.isEmpty() && it.terrain != TerrainType.WATER }
+        val barracksRegions = ownedRegions.filter { it.buildings.any { b -> b.type == BuildingType.BARRACKS } }
+
+        val hasEnemyNeighbor = ownedRegions.any { region ->
+            state.map.getNeighbors(region).any { it.ownerId != null && it.ownerId != player.id }
+        }
+
+        if (hasEnemyNeighbor && barracksRegions.isEmpty() && player.resources.canAfford(Resources(wood = 15, stone = 10, gold = 10))) {
+            val target = emptyRegions.firstOrNull() ?: ownedRegions.firstOrNull()
+            if (target != null) {
+                return AIAction(ActionQueue.ActionType.BUILD, target.id, "BARRACKS")
             }
         }
 
-        val barracksRegion = ownedRegions.firstOrNull {
-            it.buildings.any { b -> b.type == BuildingType.BARRACKS }
+        if (hasEnemyNeighbor && player.resources.canAfford(Resources(stone = 20, iron = 5))) {
+            val wallRegion = ownedRegions.firstOrNull { r ->
+                r.buildings.any { it.type == BuildingType.BARRACKS } && !r.buildings.any { it.type == BuildingType.WALL }
+            }
+            if (wallRegion != null) {
+                return AIAction(ActionQueue.ActionType.BUILD, wallRegion.id, "WALL")
+            }
         }
-        if (barracksRegion != null && player.resources.canAfford(Resources(food = 10, gold = 5))) {
-            return AIAction(ActionQueue.ActionType.RECRUIT, barracksRegion.id)
+
+        if (player.resources.canAfford(Resources(food = 10, wood = 5))) {
+            val target = emptyRegions.firstOrNull { it.terrain == TerrainType.PLAINS }
+                ?: emptyRegions.firstOrNull()
+            if (target != null) {
+                return AIAction(ActionQueue.ActionType.BUILD, target.id, "FARM")
+            }
+        }
+
+        if (player.resources.canAfford(Resources(wood = 5, stone = 15, iron = 5))) {
+            val target = emptyRegions.firstOrNull { it.terrain == TerrainType.MOUNTAIN }
+                ?: emptyRegions.firstOrNull()
+            if (target != null) {
+                return AIAction(ActionQueue.ActionType.BUILD, target.id, "MINE")
+            }
+        }
+
+        if (player.resources.canAfford(Resources(food = 10, gold = 5))) {
+            if (barracksRegions.isNotEmpty()) {
+                return AIAction(ActionQueue.ActionType.RECRUIT, barracksRegions.first().id)
+            }
         }
 
         if (player.resources.canAfford(Resources(gold = 10))) {
-            val region = ownedRegions.firstOrNull()
+            val region = ownedRegions.maxByOrNull { it.population }
             if (region != null) {
                 return AIAction(ActionQueue.ActionType.DEVELOP, region.id)
+            }
+        }
+
+        if (state.diplomacy.getRelation(player.id, 1).status == DiplomacyStatus.NEUTRAL) {
+            if (player.resources.food > 30 && player.resources.gold > 20) {
+                return AIAction(ActionQueue.ActionType.PROPOSE_TRADE, 1)
+            }
+        }
+
+        if (state.diplomacy.isAllied(player.id, 1) && state.turn > 10) {
+            val totalPop = ownedRegions.sumOf { it.population }
+            if (totalPop > 60) {
+                return AIAction(ActionQueue.ActionType.BREAK_ALLIANCE, 1)
             }
         }
 

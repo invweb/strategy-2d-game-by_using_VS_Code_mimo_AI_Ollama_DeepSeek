@@ -34,18 +34,33 @@ object Economy {
                     BuildingType.QUARRY -> stone += 2 * building.level
                     BuildingType.MINE -> iron += 2 * building.level
                     BuildingType.MARKET -> gold += 3 * building.level
-                    BuildingType.BARRACKS -> {} // no resource bonus
-                    BuildingType.WALL -> {}    // no resource bonus
+                    BuildingType.BARRACKS -> {}
+                    BuildingType.WALL -> {}
                 }
             }
         }
+
+        if (player.techs.isResearched(TechType.AGRICULTURE)) {
+            food = (food * 1.5).toInt()
+        }
+
         return Resources(food, wood, stone, iron, gold)
     }
 
     fun applyTurnIncome(gameState: GameState): GameState {
+        val bonuses = DifficultyBonuses.forDifficulty(gameState.difficulty)
         val updatedPlayers = gameState.players.map { player ->
             val income = calculateIncome(player, gameState.map)
-            player.copy(resources = player.resources + income)
+            val adjustedIncome = if (!player.isHuman) {
+                Resources(
+                    food = (income.food * bonuses.resourceMultiplier).toInt(),
+                    wood = (income.wood * bonuses.resourceMultiplier).toInt(),
+                    stone = (income.stone * bonuses.resourceMultiplier).toInt(),
+                    iron = (income.iron * bonuses.resourceMultiplier).toInt(),
+                    gold = (income.gold * bonuses.resourceMultiplier).toInt()
+                )
+            } else income
+            player.copy(resources = player.resources + adjustedIncome)
         }
         return gameState.copy(players = updatedPlayers)
     }
