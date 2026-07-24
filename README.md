@@ -18,7 +18,8 @@ A prototype of a turn-based 2D strategy game inspired by "Imperialism 2" game, b
 - **Kotlin 2.0.21** + Kotlin Multiplatform
 - **libGDX 1.12.1** — rendering, input, UI
 - **kotlinx.serialization** — JSON serialization
-- **Ollama (deepseek-r1:7b)** — AI opponent
+- **Ollama** — local AI server for opponent intelligence
+- **DeepSeek R1 (7B)** — reasoning model used for AI decision making
 
 ## Project Structure
 
