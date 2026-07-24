@@ -430,18 +430,16 @@ class GameScreen(private val game: StrategyGame) : ScreenAdapter() {
             "Population: You $myPop vs $enemyPop\n" +
             "Income: +${income.food}F +${income.wood}W +${income.stone}S +${income.gold}G | Upkeep: -${upkeep.food}F\n" +
             when {
-                actionUsedThisTurn -> "ACTION USED — click END TURN"
-                isMyTurn -> "YOUR TURN — choose an action"
+                isMyTurn -> "YOUR TURN — choose actions"
                 else -> "Waiting..."
             }
         )
         statusLabel.color = when {
-            actionUsedThisTurn -> Color.ORANGE
             isMyTurn -> Color.GREEN
             else -> Color.GRAY
         }
 
-        val dimmed = actionUsedThisTurn || !isMyTurn
+        val dimmed = !isMyTurn
         val hasBuilding = r?.buildings?.isNotEmpty() == true
         for (b in actionButtons) {
             b.color.a = if (dimmed) 0.3f else 1f
@@ -460,10 +458,6 @@ class GameScreen(private val game: StrategyGame) : ScreenAdapter() {
                 moveMode = false; moveSourceId = -1
                 runAITurns()
                 updateInfoLabel()
-                return
-            }
-            if (actionUsedThisTurn) {
-                Gdx.app.log("GameScreen", "Already used action this turn!")
                 return
             }
             val region = selectedRegion
@@ -512,7 +506,6 @@ class GameScreen(private val game: StrategyGame) : ScreenAdapter() {
             state = com.example.strategy.logic.ActionQueue.processAll(state)
             game.gameState = state
             selectedRegion = state.map.getRegionById(region.id)
-            actionUsedThisTurn = true
             updateInfoLabel()
             Gdx.app.log("GameScreen", "Action done: $actionType on ${region.name}")
         } catch (e: Exception) {
