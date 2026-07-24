@@ -2,7 +2,7 @@
 
 ## Description
 
-A prototype of a turn-based 2D strategy game inspired by Imperialism, built on **libGDX + Kotlin + Kotlin Multiplatform**. Runs on macOS in Desktop mode.
+A prototype of a turn-based 2D strategy game inspired by "Imperialism 2" game, built on **libGDX + Kotlin + Kotlin Multiplatform**. Runs on macOS in Desktop mode.
 
 ## Screenshots
 
