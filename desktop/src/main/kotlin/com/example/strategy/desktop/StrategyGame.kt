@@ -21,7 +21,7 @@ class StrategyGame : Game() {
         batch = SpriteBatch()
         font = BitmapFont()
         font.data.setScale(1.2f)
-        setScreen(GameScreen(this))
+        setScreen(MenuScreen(this))
     }
 
     override fun dispose() {
