@@ -115,12 +115,15 @@ When you press **END TURN**:
 3. Model analyzes the situation and picks one action
 4. Action is executed, turn returns to the player
 
-### Fallback
+### Fallback (No Ollama Required)
 
-If Ollama is unavailable, a default strategy runs:
-- Build Farm on empty territories
-- Recruit troops if Barracks exist
-- Develop regions if Gold is available
+**The game works fully without Ollama.** If Ollama is unavailable (not installed or not running), the AI switches to a simple rule-based strategy that requires no external dependencies:
+
+1. Build Farm on empty territories (if can afford)
+2. Recruit troops if Barracks exist (if can afford)
+3. Develop regions if Gold is available (if can afford)
+
+This means you can play against the AI opponent immediately after launching the game — no setup needed.
 
 ## Controls
 
