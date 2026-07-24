@@ -4,6 +4,11 @@
 
 A prototype of a turn-based 2D strategy game inspired by Imperialism, built on **libGDX + Kotlin + Kotlin Multiplatform**. Runs on macOS in Desktop mode.
 
+## Screenshots
+
+![Game Window](screenshots/game_window.png)
+![Game Window 2](screenshots/game_window_2.png)
+
 ## Technologies
 
 - **Kotlin 2.0.21** + Kotlin Multiplatform
