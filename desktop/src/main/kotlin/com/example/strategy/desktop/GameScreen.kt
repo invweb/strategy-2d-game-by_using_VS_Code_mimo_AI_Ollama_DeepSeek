@@ -382,6 +382,15 @@ class GameScreen(private val game: StrategyGame) : ScreenAdapter() {
             }
         })
         panel.add(endBtn).fillX().padLeft(10f)
+
+        val menuBtn = TextButton("MENU", skin)
+        menuBtn.label.setFontScale(0.75f); menuBtn.label.color = Color.LIGHT_GRAY
+        menuBtn.addListener(object : ClickListener() {
+            override fun clicked(event: InputEvent?, x: Float, y: Float) {
+                game.setScreen(MenuScreen(game))
+            }
+        })
+        panel.add(menuBtn).fillX().padLeft(10f)
         root.add(panel).right().bottom().pad(10f)
         stage.addActor(root)
     }

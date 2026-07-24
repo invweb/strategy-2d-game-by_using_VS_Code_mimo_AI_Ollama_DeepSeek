@@ -50,21 +50,6 @@ class MenuScreen(private val game: StrategyGame) : ScreenAdapter() {
             }
         })
 
-        val loadGameBtn = makeButton("LOAD GAME", Color(0.3f, 0.5f, 0.7f, 1f))
-        loadGameBtn.addListener(object : ClickListener() {
-            override fun clicked(event: InputEvent?, x: Float, y: Float) {
-                val loaded = com.example.strategy.platform.GameFactory.loadGame()
-                if (loaded != null) {
-                    game.gameState = loaded
-                    game.setScreen(GameScreen(game))
-                } else {
-                    // No save file — start new game
-                    game.gameState = com.example.strategy.platform.GameFactory.createDefaultGameState()
-                    game.setScreen(GameScreen(game))
-                }
-            }
-        })
-
         val quitBtn = makeButton("QUIT", Color(0.7f, 0.3f, 0.3f, 1f))
         quitBtn.addListener(object : ClickListener() {
             override fun clicked(event: InputEvent?, x: Float, y: Float) {
@@ -73,7 +58,6 @@ class MenuScreen(private val game: StrategyGame) : ScreenAdapter() {
         })
 
         root.add(newGameBtn).width(300f).height(60f).padBottom(15f).row()
-        root.add(loadGameBtn).width(300f).height(60f).padBottom(15f).row()
         root.add(quitBtn).width(300f).height(60f).padBottom(15f).row()
 
         // Footer
