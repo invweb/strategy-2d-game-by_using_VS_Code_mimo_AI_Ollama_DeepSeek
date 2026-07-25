@@ -1,6 +1,5 @@
 package com.example.strategy.desktop
 
-import com.badlogic.gdx.Gdx
 import com.example.strategy.model.GameState
 import kotlinx.serialization.json.Json
 import java.io.File
@@ -8,16 +7,21 @@ import java.io.File
 object SaveManager {
 
     private val json = Json { ignoreUnknownKeys = true; prettyPrint = true }
-    private const val SAVE_DIR = "saves"
-    private const val SAVE_FILE = "save.json"
 
-    fun save(state: GameState): Boolean {
+    private fun saveDir(): File {
+        val home = System.getProperty("user.home")
+        return File(home, ".strategy_saves")
+    }
+
+    fun save(state: GameState, name: String): Boolean {
         return try {
-            val dir = File(Gdx.files.local(SAVE_DIR).file().absolutePath)
+            val dir = saveDir()
             if (!dir.exists()) dir.mkdirs()
-            val file = File(dir, SAVE_FILE)
+            val safeName = name.replace(Regex("[^a-zA-Z0-9_\\- ]"), "_").trim()
+            val file = File(dir, "$safeName.json")
             val data = json.encodeToString(GameState.serializer(), state)
             file.writeText(data)
+            println("[SaveManager] Saved to ${file.absolutePath}")
             true
         } catch (e: Exception) {
             println("[SaveManager] Save failed: ${e.message}")
@@ -25,11 +29,13 @@ object SaveManager {
         }
     }
 
-    fun load(): GameState? {
+    fun load(name: String): GameState? {
         return try {
-            val dir = File(Gdx.files.local(SAVE_DIR).file().absolutePath)
-            val file = File(dir, SAVE_FILE)
-            if (!file.exists()) return null
+            val file = File(saveDir(), "$name.json")
+            if (!file.exists()) {
+                println("[SaveManager] No save file: ${file.absolutePath}")
+                return null
+            }
             val data = file.readText()
             json.decodeFromString(GameState.serializer(), data)
         } catch (e: Exception) {
@@ -38,16 +44,19 @@ object SaveManager {
         }
     }
 
-    fun hasSave(): Boolean {
-        val dir = File(Gdx.files.local(SAVE_DIR).file().absolutePath)
-        return File(dir, SAVE_FILE).exists()
+    fun listSaves(): List<String> {
+        val dir = saveDir()
+        if (!dir.exists()) return emptyList()
+        return dir.listFiles()
+            ?.filter { it.isFile && it.extension == "json" }
+            ?.sortedByDescending { it.lastModified() }
+            ?.map { it.nameWithoutExtension }
+            ?: emptyList()
     }
 
-    fun deleteSave(): Boolean {
+    fun deleteSave(name: String): Boolean {
         return try {
-            val dir = File(Gdx.files.local(SAVE_DIR).file().absolutePath)
-            val file = File(dir, SAVE_FILE)
-            file.delete()
+            File(saveDir(), "$name.json").delete()
         } catch (e: Exception) {
             false
         }

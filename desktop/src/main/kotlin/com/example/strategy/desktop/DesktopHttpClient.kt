@@ -16,8 +16,8 @@ class DesktopHttpClient : HttpClient {
             connection.requestMethod = "POST"
             connection.setRequestProperty("Content-Type", "application/json")
             connection.doOutput = true
-            connection.connectTimeout = 30000
-            connection.readTimeout = 60000
+            connection.connectTimeout = 3000
+            connection.readTimeout = 5000
 
             OutputStreamWriter(connection.outputStream).use { writer ->
                 writer.write(jsonBody)
