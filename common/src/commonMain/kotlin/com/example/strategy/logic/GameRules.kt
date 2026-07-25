@@ -15,8 +15,20 @@ object GameRules {
         BuildingType.WALL to Resources(stone = 20, iron = 5)
     )
 
+    private val BUILD_TERRAIN = mapOf(
+        BuildingType.FARM to setOf(TerrainType.PLAINS, TerrainType.HILLS),
+        BuildingType.LUMBER_MILL to setOf(TerrainType.FOREST),
+        BuildingType.QUARRY to setOf(TerrainType.MOUNTAIN, TerrainType.HILLS),
+        BuildingType.MINE to setOf(TerrainType.MOUNTAIN),
+        BuildingType.MARKET to setOf(TerrainType.PLAINS, TerrainType.HILLS, TerrainType.FOREST),
+        BuildingType.BARRACKS to setOf(TerrainType.PLAINS, TerrainType.HILLS, TerrainType.FOREST),
+        BuildingType.WALL to setOf(TerrainType.PLAINS, TerrainType.MOUNTAIN, TerrainType.HILLS)
+    )
+
     fun canBuild(player: Player, region: Region, type: BuildingType): Boolean {
         val cost = BUILD_COSTS[type] ?: return false
+        val allowedTerrains = BUILD_TERRAIN[type]
+        if (allowedTerrains != null && region.terrain !in allowedTerrains) return false
         return region.ownerId == player.id && region.buildings.isEmpty() && player.resources.canAfford(cost)
     }
 

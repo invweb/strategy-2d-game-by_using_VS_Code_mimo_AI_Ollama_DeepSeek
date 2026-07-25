@@ -45,6 +45,18 @@ object GameFactory {
                 }
                 val pop = if (terrain == TerrainType.WATER) 0 else (5..15).random()
 
+                val buildings = mutableListOf<Building>()
+                if (owner == 0 && x == 1 && y == 1 && terrain == TerrainType.PLAINS) {
+                    buildings.add(Building(BuildingType.FARM))
+                    buildings.add(Building(BuildingType.BARRACKS))
+                    buildings.add(Building(BuildingType.MARKET))
+                }
+                if (owner == 1 && x == w - 2 && y == h - 2 && terrain == TerrainType.PLAINS) {
+                    buildings.add(Building(BuildingType.FARM))
+                    buildings.add(Building(BuildingType.BARRACKS))
+                    buildings.add(Building(BuildingType.MARKET))
+                }
+
                 regions.add(
                     Region(
                         id = id,
@@ -53,7 +65,8 @@ object GameFactory {
                         tileX = x,
                         tileY = y,
                         ownerId = owner,
-                        population = pop
+                        population = pop,
+                        buildings = buildings
                     )
                 )
                 id++

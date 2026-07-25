@@ -27,6 +27,7 @@ application {
 
 tasks.withType<JavaExec> {
     jvmArgs("-XstartOnFirstThread")
+    workingDir = file("assets")
 }
 
 val createDmg = tasks.register("createDmg") {
