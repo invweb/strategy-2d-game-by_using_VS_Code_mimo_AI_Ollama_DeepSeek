@@ -1,0 +1,9 @@
+.git
+.gradle
+build
+*.iml
+.idea
+.vscode
+screenshots
+desktop/saves
+desktop/ai_prefs.txt
