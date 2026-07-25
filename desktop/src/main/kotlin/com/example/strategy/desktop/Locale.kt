@@ -481,4 +481,15 @@ object Locale {
     val ATTACK_BTN get() = when(current) {
         Lang.RU -> "АТАКА"; Lang.DE -> "ANGREIFEN"; Lang.EN -> "ATTACK"
     }
+
+    val TRADE_ACTIVE get() = when(current) {
+        Lang.RU -> "Торговля"; Lang.DE -> "Handel"; Lang.EN -> "Trade"
+    }
+
+    val TERR get() = when(current) {
+        Lang.RU -> "терр"; Lang.DE -> "Geb"; Lang.EN -> "terr"
+    }
+    val POP get() = when(current) {
+        Lang.RU -> "нас"; Lang.DE -> "Bev"; Lang.EN -> "pop"
+    }
 }

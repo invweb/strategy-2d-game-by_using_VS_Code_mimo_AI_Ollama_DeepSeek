@@ -598,7 +598,7 @@ class GameScreen(private val game: StrategyGame) : ScreenAdapter() {
             DiplomacyStatus.ENEMY -> "ENEMY"
             DiplomacyStatus.NEUTRAL -> "NEUTRAL"
         }
-        diplomacyLabel.setText("${Locale.DIPLOMACY} $diploStatus${if (diplo.tradeActive) " + Trade" else ""}")
+        diplomacyLabel.setText("${Locale.DIPLOMACY} $diploStatus${if (diplo.tradeActive) " + ${Locale.TRADE_ACTIVE}" else ""}")
 
         if (selectedRegions.size > 1) {
             val totalPop = selectedRegions.sumOf { it.population }
@@ -661,8 +661,8 @@ class GameScreen(private val game: StrategyGame) : ScreenAdapter() {
         if (!showStats) { statsLabel.setText(""); return }
         val history = state.history
             if (history.isEmpty()) { statsLabel.setText(Locale.NO_HISTORY); return }
-        statsLabel.setText("--- Stats ---\n" + history.takeLast(5).joinToString("\n") { h ->
-            "T${h.turn}: ${h.territories} terr, ${h.population} pop, F${h.resources.food} W${h.resources.wood} S${h.resources.stone} G${h.resources.gold}"
+        statsLabel.setText(Locale.STATS_HEADER + "\n" + history.takeLast(5).joinToString("\n") { h ->
+            "T${h.turn}: ${h.territories} ${Locale.TERR}, ${h.population} ${Locale.POP}, F${h.resources.food} W${h.resources.wood} S${h.resources.stone} G${h.resources.gold}"
         })
     }
 
