@@ -28,3 +28,60 @@ application {
 tasks.withType<JavaExec> {
     jvmArgs("-XstartOnFirstThread")
 }
+
+val createDmg = tasks.register("createDmg") {
+    group = "distribution"
+    description = "Build macOS DMG installer using jpackage"
+
+    dependsOn("jar")
+
+    doLast {
+        val outputDir = layout.buildDirectory.dir("dmg").get().asFile
+        outputDir.deleteRecursively()
+        outputDir.mkdirs()
+
+        val libDir = layout.buildDirectory.dir("dmg/lib").get().asFile
+        libDir.mkdirs()
+
+        val runtimeClasspath = configurations["runtimeClasspath"].files
+        val mainJar = tasks.named<Jar>("jar").get().archiveFile.get().asFile
+
+        runtimeClasspath.filter { it.extension == "jar" }.forEach { jar ->
+            jar.copyTo(libDir.resolve(jar.name), overwrite = true)
+        }
+        mainJar.copyTo(libDir.resolve(mainJar.name), overwrite = true)
+
+        val jpackageBin = "/opt/homebrew/opt/openjdk@17/bin/jpackage"
+        val iconFile = file("assets/icon.icns")
+
+        val process = ProcessBuilder(
+            jpackageBin,
+            "--type", "dmg",
+            "--name", "Strategy",
+            "--input", libDir.absolutePath,
+            "--main-jar", mainJar.name,
+            "--main-class", "com.example.strategy.desktop.DesktopLauncherKt",
+            "--java-options", "-XstartOnFirstThread",
+            "--icon", iconFile.absolutePath,
+            "--dest", outputDir.absolutePath,
+            "--verbose"
+        )
+            .directory(outputDir)
+            .redirectErrorStream(true)
+            .start()
+
+        val output = process.inputStream.bufferedReader().readText()
+        val exitCode = process.waitFor()
+
+        if (exitCode != 0) {
+            error("jpackage failed with exit code $exitCode:\n$output")
+        }
+
+        val dmgFile = outputDir.listFiles()?.firstOrNull { it.extension == "dmg" }
+        if (dmgFile != null) {
+            logger.lifecycle("DMG created: ${dmgFile.absolutePath}")
+        } else {
+            error("DMG file not found in $outputDir\njpackage output:\n$output")
+        }
+    }
+}
