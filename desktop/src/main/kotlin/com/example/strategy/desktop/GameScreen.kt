@@ -423,27 +423,27 @@ class GameScreen(private val game: StrategyGame) : ScreenAdapter() {
             return b
         }
 
-        val buildFarmBtn = btn("Farm (10F 5W)", "BUILD_FARM"); buildButtons.add(buildFarmBtn)
-        val buildLumberBtn = btn("Lumber Mill (15W)", "BUILD_LUMBER_MILL"); buildButtons.add(buildLumberBtn)
-        val buildBarracksBtn = btn("Barracks (15W 10S 10G)", "BUILD_BARRACKS"); buildButtons.add(buildBarracksBtn)
-        val buildMineBtn = btn("Mine (5W 15S 5I)", "BUILD_MINE"); buildButtons.add(buildMineBtn)
+        val buildFarmBtn = btn("Farm (10F 5W)", Actions.BUILD_FARM); buildButtons.add(buildFarmBtn)
+        val buildLumberBtn = btn("Lumber Mill (15W)", Actions.BUILD_LUMBER_MILL); buildButtons.add(buildLumberBtn)
+        val buildBarracksBtn = btn("Barracks (15W 10S 10G)", Actions.BUILD_BARRACKS); buildButtons.add(buildBarracksBtn)
+        val buildMineBtn = btn("Mine (5W 15S 5I)", Actions.BUILD_MINE); buildButtons.add(buildMineBtn)
 
         panel.add(buildFarmBtn).fillX()
         panel.add(buildLumberBtn).fillX()
         panel.add(buildBarracksBtn).fillX().row()
         panel.add(buildMineBtn).fillX()
-        panel.add(btn("Recruit (10F 5G)", "RECRUIT")).fillX()
-        panel.add(btn("Infantry (5F 3G)", "RECRUIT_INFANTRY")).fillX()
-        panel.add(btn("Cavalry (10F 8G 5W)", "RECRUIT_CAVALRY")).fillX().row()
-        panel.add(btn("Siege (15W 10I 10G)", "RECRUIT_SIEGE")).fillX()
-        panel.add(btn("Develop (10G)", "DEVELOP")).fillX()
-        panel.add(btn("MOVE", "MOVE")).fillX().row()
-        panel.add(btn("ATTACK", "ATTACK")).fillX()
+        panel.add(btn("Recruit (10F 5G)", Actions.RECRUIT)).fillX()
+        panel.add(btn("Infantry (5F 3G)", Actions.RECRUIT_INFANTRY)).fillX()
+        panel.add(btn("Cavalry (10F 8G 5W)", Actions.RECRUIT_CAVALRY)).fillX().row()
+        panel.add(btn("Siege (15W 10I 10G)", Actions.RECRUIT_SIEGE)).fillX()
+        panel.add(btn("Develop (10G)", Actions.DEVELOP)).fillX()
+        panel.add(btn("MOVE", Actions.MOVE)).fillX().row()
+        panel.add(btn("ATTACK", Actions.ATTACK)).fillX()
 
         val endBtn = TextButton("END TURN", skin)
         endBtn.label.setFontScale(0.75f); endBtn.label.color = Color.GOLD
         endBtn.addListener(object : ClickListener() {
-            override fun clicked(event: InputEvent?, x: Float, y: Float) { handleAction("END_TURN") }
+            override fun clicked(event: InputEvent?, x: Float, y: Float) { handleAction(Actions.END_TURN) }
         })
         panel.add(endBtn).fillX().padLeft(10f)
 
@@ -509,10 +509,10 @@ class GameScreen(private val game: StrategyGame) : ScreenAdapter() {
         diplomacyLabel = Label(Locale.DIPLOMACY, skin)
         diplomacyLabel.color = Color.CYAN
         diploPanel.add(diplomacyLabel).colspan(2).row()
-        diploPanel.add(diploBtn("Alliance", "DIPLO_ALLIANCE")).fillX()
-        diploPanel.add(diploBtn("Break", "DIPLO_BREAK")).fillX().row()
-        diploPanel.add(diploBtn("Trade", "DIPLO_TRADE")).fillX()
-        diploPanel.add(diploBtn("Cancel", "DIPLO_CANCEL_TRADE")).fillX().row()
+        diploPanel.add(diploBtn("Alliance", Actions.DIPLO_ALLIANCE)).fillX()
+        diploPanel.add(diploBtn("Break", Actions.DIPLO_BREAK)).fillX().row()
+        diploPanel.add(diploBtn("Trade", Actions.DIPLO_TRADE)).fillX()
+        diploPanel.add(diploBtn("Cancel", Actions.DIPLO_CANCEL_TRADE)).fillX().row()
 
         val techPanel = Table(skin).apply { left().bottom().pad(10f); defaults().pad(2f) }
         techLabel = Label(Locale.TECHS, skin)
@@ -522,7 +522,7 @@ class GameScreen(private val game: StrategyGame) : ScreenAdapter() {
             val b = TextButton(tech.name.take(8), skin)
             b.label.setFontScale(0.55f)
             b.addListener(object : ClickListener() {
-                override fun clicked(event: InputEvent?, x: Float, y: Float) { handleAction("RESEARCH:${tech.type.name}") }
+                override fun clicked(event: InputEvent?, x: Float, y: Float) { handleAction("${Actions.RESEARCH}:${tech.type.name}") }
             })
             techButtons.add(b)
             techPanel.add(b).fillX().colspan(2).row()
@@ -794,7 +794,7 @@ class GameScreen(private val game: StrategyGame) : ScreenAdapter() {
 
     private fun handleAction(actionType: String) {
         try {
-            if (actionType == "END_TURN") {
+            if (actionType == Actions.END_TURN) {
                 state = com.example.strategy.logic.TurnManager.endTurn(state)
                 game.gameState = state; selectedRegion = null; selectedRegions.clear(); actionUsedThisTurn = false
                 attackMode = false; attackSourceId = -1; moveMode = false; moveSourceId = -1
@@ -804,8 +804,8 @@ class GameScreen(private val game: StrategyGame) : ScreenAdapter() {
             }
             if (actionUsedThisTurn || aiPending) return
             if (actionType.startsWith("DIPLO_")) { handleDiploAction(actionType); return }
-            if (actionType.startsWith("RESEARCH:")) {
-                val action = com.example.strategy.logic.ActionQueue.GameAction(state.currentPlayerId, com.example.strategy.logic.ActionQueue.ActionType.RESEARCH, 0, actionType.removePrefix("RESEARCH:"))
+            if (actionType.startsWith(Actions.RESEARCH + ":")) {
+                val action = com.example.strategy.logic.ActionQueue.GameAction(state.currentPlayerId, com.example.strategy.logic.ActionQueue.ActionType.RESEARCH, 0, actionType.removePrefix(Actions.RESEARCH + ":"))
                 com.example.strategy.logic.ActionQueue.enqueue(action)
                 state = com.example.strategy.logic.ActionQueue.processAll(state)
                 game.gameState = state; actionUsedThisTurn = true
@@ -814,28 +814,28 @@ class GameScreen(private val game: StrategyGame) : ScreenAdapter() {
             }
             val region = selectedRegion
             if (region == null) return
-            if (actionType == "ATTACK") {
+            if (actionType == Actions.ATTACK) {
                 if (region.ownerId != state.currentPlayerId) return
                 attackMode = true; attackSourceId = region.id
                 infoLabel.setText("ATTACK MODE: Click enemy region to attack from ${region.name}")
                 return
             }
-            if (actionType == "MOVE") {
+            if (actionType == Actions.MOVE) {
                 if (region.ownerId != state.currentPlayerId) return
                 moveMode = true; moveSourceId = region.id
                 infoLabel.setText("MOVE MODE: Click your region to move troops from ${region.name}")
                 return
             }
             val action = when (actionType) {
-                "BUILD_FARM" -> com.example.strategy.logic.ActionQueue.GameAction(state.currentPlayerId, com.example.strategy.logic.ActionQueue.ActionType.BUILD, region.id, "FARM")
-                "BUILD_LUMBER_MILL" -> com.example.strategy.logic.ActionQueue.GameAction(state.currentPlayerId, com.example.strategy.logic.ActionQueue.ActionType.BUILD, region.id, "LUMBER_MILL")
-                "BUILD_BARRACKS" -> com.example.strategy.logic.ActionQueue.GameAction(state.currentPlayerId, com.example.strategy.logic.ActionQueue.ActionType.BUILD, region.id, "BARRACKS")
-                "BUILD_MINE" -> com.example.strategy.logic.ActionQueue.GameAction(state.currentPlayerId, com.example.strategy.logic.ActionQueue.ActionType.BUILD, region.id, "MINE")
-                "RECRUIT" -> com.example.strategy.logic.ActionQueue.GameAction(state.currentPlayerId, com.example.strategy.logic.ActionQueue.ActionType.RECRUIT, region.id)
-                "RECRUIT_INFANTRY" -> com.example.strategy.logic.ActionQueue.GameAction(state.currentPlayerId, com.example.strategy.logic.ActionQueue.ActionType.RECRUIT_INFANTRY, region.id)
-                "RECRUIT_CAVALRY" -> com.example.strategy.logic.ActionQueue.GameAction(state.currentPlayerId, com.example.strategy.logic.ActionQueue.ActionType.RECRUIT_CAVALRY, region.id)
-                "RECRUIT_SIEGE" -> com.example.strategy.logic.ActionQueue.GameAction(state.currentPlayerId, com.example.strategy.logic.ActionQueue.ActionType.RECRUIT_SIEGE, region.id)
-                "DEVELOP" -> com.example.strategy.logic.ActionQueue.GameAction(state.currentPlayerId, com.example.strategy.logic.ActionQueue.ActionType.DEVELOP, region.id)
+                Actions.BUILD_FARM -> com.example.strategy.logic.ActionQueue.GameAction(state.currentPlayerId, com.example.strategy.logic.ActionQueue.ActionType.BUILD, region.id, "FARM")
+                Actions.BUILD_LUMBER_MILL -> com.example.strategy.logic.ActionQueue.GameAction(state.currentPlayerId, com.example.strategy.logic.ActionQueue.ActionType.BUILD, region.id, "LUMBER_MILL")
+                Actions.BUILD_BARRACKS -> com.example.strategy.logic.ActionQueue.GameAction(state.currentPlayerId, com.example.strategy.logic.ActionQueue.ActionType.BUILD, region.id, "BARRACKS")
+                Actions.BUILD_MINE -> com.example.strategy.logic.ActionQueue.GameAction(state.currentPlayerId, com.example.strategy.logic.ActionQueue.ActionType.BUILD, region.id, "MINE")
+                Actions.RECRUIT -> com.example.strategy.logic.ActionQueue.GameAction(state.currentPlayerId, com.example.strategy.logic.ActionQueue.ActionType.RECRUIT, region.id)
+                Actions.RECRUIT_INFANTRY -> com.example.strategy.logic.ActionQueue.GameAction(state.currentPlayerId, com.example.strategy.logic.ActionQueue.ActionType.RECRUIT_INFANTRY, region.id)
+                Actions.RECRUIT_CAVALRY -> com.example.strategy.logic.ActionQueue.GameAction(state.currentPlayerId, com.example.strategy.logic.ActionQueue.ActionType.RECRUIT_CAVALRY, region.id)
+                Actions.RECRUIT_SIEGE -> com.example.strategy.logic.ActionQueue.GameAction(state.currentPlayerId, com.example.strategy.logic.ActionQueue.ActionType.RECRUIT_SIEGE, region.id)
+                Actions.DEVELOP -> com.example.strategy.logic.ActionQueue.GameAction(state.currentPlayerId, com.example.strategy.logic.ActionQueue.ActionType.DEVELOP, region.id)
                 else -> return
             }
             com.example.strategy.logic.ActionQueue.enqueue(action)
@@ -850,10 +850,10 @@ class GameScreen(private val game: StrategyGame) : ScreenAdapter() {
     private fun handleDiploAction(actionType: String) {
         if (actionUsedThisTurn) return
         val action = when (actionType) {
-            "DIPLO_ALLIANCE" -> com.example.strategy.logic.ActionQueue.GameAction(state.currentPlayerId, com.example.strategy.logic.ActionQueue.ActionType.PROPOSE_ALLIANCE, 1)
-            "DIPLO_BREAK" -> com.example.strategy.logic.ActionQueue.GameAction(state.currentPlayerId, com.example.strategy.logic.ActionQueue.ActionType.BREAK_ALLIANCE, 1)
-            "DIPLO_TRADE" -> com.example.strategy.logic.ActionQueue.GameAction(state.currentPlayerId, com.example.strategy.logic.ActionQueue.ActionType.PROPOSE_TRADE, 1)
-            "DIPLO_CANCEL_TRADE" -> com.example.strategy.logic.ActionQueue.GameAction(state.currentPlayerId, com.example.strategy.logic.ActionQueue.ActionType.CANCEL_TRADE, 1)
+            Actions.DIPLO_ALLIANCE -> com.example.strategy.logic.ActionQueue.GameAction(state.currentPlayerId, com.example.strategy.logic.ActionQueue.ActionType.PROPOSE_ALLIANCE, 1)
+            Actions.DIPLO_BREAK -> com.example.strategy.logic.ActionQueue.GameAction(state.currentPlayerId, com.example.strategy.logic.ActionQueue.ActionType.BREAK_ALLIANCE, 1)
+            Actions.DIPLO_TRADE -> com.example.strategy.logic.ActionQueue.GameAction(state.currentPlayerId, com.example.strategy.logic.ActionQueue.ActionType.PROPOSE_TRADE, 1)
+            Actions.DIPLO_CANCEL_TRADE -> com.example.strategy.logic.ActionQueue.GameAction(state.currentPlayerId, com.example.strategy.logic.ActionQueue.ActionType.CANCEL_TRADE, 1)
             else -> return
         }
         com.example.strategy.logic.ActionQueue.enqueue(action)
