@@ -242,7 +242,7 @@ When you press **END TURN**:
 This folder contains pre-built game distributions ready to run:
 
 ```
-github/
+releases/
 ├── desktop/                    # Desktop game (macOS/Linux/Windows)
 │   ├── bin/
 │   │   ├── desktop             # Launch script (macOS/Linux)
@@ -305,7 +305,7 @@ July 2026
 ### Структура папки
 
 ```
-github/
+releases/
 ├── desktop/        # Десктоп-игра (все зависимости в lib/)
 │   ├── bin/desktop # Скрипт запуска (macOS/Linux)
 │   └── lib/        # 65 JAR-файлов зависимостей

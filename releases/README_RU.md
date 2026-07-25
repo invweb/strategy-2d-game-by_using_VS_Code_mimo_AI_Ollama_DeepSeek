@@ -242,7 +242,7 @@ Strategy/
 Эта папка содержит готовые к запуску дистрибутивы игры:
 
 ```
-github/
+releases/
 ├── desktop/                    # Десктоп-игра (macOS/Linux/Windows)
 │   ├── bin/
 │   │   ├── desktop             # Скрипт запуска (macOS/Linux)

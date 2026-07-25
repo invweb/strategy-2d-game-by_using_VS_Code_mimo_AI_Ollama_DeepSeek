@@ -242,7 +242,7 @@ Wenn Sie **ZUG BEENDEN** drücken:
 Dieser Ordner enthält startfertige Spieledistributionen:
 
 ```
-github/
+releases/
 ├── desktop/                    # Desktop-Spiel (macOS/Linux/Windows)
 │   ├── bin/
 │   │   ├── desktop             # Startskript (macOS/Linux)
