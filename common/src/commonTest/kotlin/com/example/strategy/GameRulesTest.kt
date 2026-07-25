@@ -1,117 +1,240 @@
-package com.example.strategy.logic
+package com.example.strategy
 
 import com.example.strategy.model.*
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
+import com.example.strategy.logic.*
+import kotlin.test.*
 
 class GameRulesTest {
 
-    private fun createTestPlayer(id: Int = 0, resources: Resources = Resources(food = 100, wood = 100, stone = 100, iron = 100, gold = 100)): Player {
-        return Player(id = id, name = "Player$id", color = "blue", resources = resources, isHuman = id == 0)
-    }
+    private fun createPlayer(
+        id: Int = 1,
+        resources: Resources = Resources(food = 100, wood = 100, stone = 100, iron = 100, gold = 200),
+        techs: TechState = TechState()
+    ) = Player(id = id, name = "Player$id", color = "blue", resources = resources, techs = techs)
 
-    private fun createTestRegion(id: Int = 0, ownerId: Int? = 0, buildings: List<Building> = emptyList(), population: Int = 10): Region {
-        return Region(id = id, name = "Region$id", terrain = TerrainType.PLAINS, tileX = 0, tileY = 0, ownerId = ownerId, buildings = buildings, population = population)
-    }
+    private fun createRegion(
+        id: Int = 1,
+        ownerId: Int? = 1,
+        terrain: TerrainType = TerrainType.PLAINS,
+        population: Int = 20,
+        buildings: List<Building> = emptyList(),
+        units: UnitStack = UnitStack()
+    ) = Region(
+        id = id, name = "Region$id", terrain = terrain,
+        tileX = id, tileY = 0, ownerId = ownerId,
+        population = population, buildings = buildings, units = units
+    )
 
-    private fun createTestGameState(vararg players: Player): GameState {
-        val regions = listOf(
-            createTestRegion(0, 0),
-            createTestRegion(1, 1),
-            createTestRegion(2, 0),
-            createTestRegion(3, null)
-        )
-        return GameState(players = players.toList(), map = GameMap(width = 4, height = 1, regions = regions.toList()))
+    private fun createGameState(
+        players: List<Player> = listOf(createPlayer(1), createPlayer(2)),
+        regions: List<Region> = listOf(createRegion(1, 1), createRegion(2, 2))
+    ): GameState {
+        val map = GameMap(width = 2, height = 1, regions = regions)
+        return GameState(players = players, map = map, currentPlayerId = 1)
     }
 
     @Test
-    fun `canBuild returns true when region has no buildings and player can afford`() {
-        val player = createTestPlayer()
-        val region = createTestRegion()
+    fun testCanBuildSuccess() {
+        val player = createPlayer()
+        val region = createRegion()
         assertTrue(GameRules.canBuild(player, region, BuildingType.FARM))
     }
 
     @Test
-    fun `canBuild returns false when region already has building`() {
-        val player = createTestPlayer()
-        val region = createTestRegion(buildings = listOf(Building(BuildingType.FARM)))
+    fun testCanBuildNotOwner() {
+        val player = createPlayer(id = 1)
+        val region = createRegion(ownerId = 2)
         assertFalse(GameRules.canBuild(player, region, BuildingType.FARM))
     }
 
     @Test
-    fun `canBuild returns false when player cannot afford`() {
-        val player = createTestPlayer(resources = Resources(food = 0, wood = 0, stone = 0, iron = 0, gold = 0))
-        val region = createTestRegion()
+    fun testCanBuildAlreadyHasBuilding() {
+        val player = createPlayer()
+        val region = createRegion(buildings = listOf(Building(BuildingType.FARM)))
         assertFalse(GameRules.canBuild(player, region, BuildingType.FARM))
     }
 
     @Test
-    fun `canBuild returns false when region is not owned by player`() {
-        val player = createTestPlayer(id = 0)
-        val region = createTestRegion(ownerId = 1)
+    fun testCanBuildInsufficientResources() {
+        val player = createPlayer(resources = Resources(food = 0, wood = 0))
+        val region = createRegion()
         assertFalse(GameRules.canBuild(player, region, BuildingType.FARM))
     }
 
     @Test
-    fun `processBuild deducts resources and adds building`() {
-        val player = createTestPlayer()
-        val region = createTestRegion()
-        val state = createTestGameState(player)
-
-        val action = ActionQueue.GameAction(0, ActionQueue.ActionType.BUILD, 0, "FARM")
+    fun testProcessBuildSuccess() {
+        val state = createGameState()
+        val action = ActionQueue.GameAction(
+            playerId = 1,
+            type = ActionQueue.ActionType.BUILD,
+            targetRegionId = 1,
+            param = "FARM"
+        )
         val newState = GameRules.processBuild(state, action)
-
-        val updatedPlayer = newState.players.find { it.id == 0 }!!
-        val updatedRegion = newState.map.getRegionById(0)!!
-
-        assertEquals(90, updatedPlayer.resources.food)
-        assertEquals(95, updatedPlayer.resources.wood)
-        assertTrue(updatedRegion.buildings.any { it.type == BuildingType.FARM })
+        val region = newState.map.getRegionById(1)!!
+        assertEquals(1, region.buildings.size)
+        assertEquals(BuildingType.FARM, region.buildings[0].type)
     }
 
     @Test
-    fun `processRecruit adds units when barracks exists`() {
-        val player = createTestPlayer()
-        val region = createTestRegion(buildings = listOf(Building(BuildingType.BARRACKS)))
-        val regions = listOf(region, createTestRegion(1, 1), createTestRegion(2, 0), createTestRegion(3, null))
-        val state = GameState(players = listOf(player), map = GameMap(width = 4, height = 1, regions = regions))
+    fun testProcessBuildDeductsResources() {
+        val state = createGameState()
+        val action = ActionQueue.GameAction(
+            playerId = 1,
+            type = ActionQueue.ActionType.BUILD,
+            targetRegionId = 1,
+            param = "FARM"
+        )
+        val newState = GameRules.processBuild(state, action)
+        val player = newState.players.find { it.id == 1 }!!
+        assertEquals(90, player.resources.food)
+        assertEquals(95, player.resources.wood)
+    }
 
-        val action = ActionQueue.GameAction(0, ActionQueue.ActionType.RECRUIT, 0)
+    @Test
+    fun testProcessRecruitSuccess() {
+        val region = createRegion(buildings = listOf(Building(BuildingType.BARRACKS)))
+        val state = createGameState(regions = listOf(region, createRegion(2, 2)))
+        val action = ActionQueue.GameAction(
+            playerId = 1,
+            type = ActionQueue.ActionType.RECRUIT,
+            targetRegionId = 1
+        )
         val newState = GameRules.processRecruit(state, action)
-
-        val updatedRegion = newState.map.getRegionById(0)!!
-        assertEquals(15, updatedRegion.population)
-        assertTrue(updatedRegion.units.units.any { it.type == UnitType.INFANTRY && it.count == 5 })
+        val updatedRegion = newState.map.getRegionById(1)!!
+        assertEquals(25, updatedRegion.population)
+        assertEquals(5, updatedRegion.units.totalPopulation)
     }
 
     @Test
-    fun `processRecruit does nothing without barracks`() {
-        val player = createTestPlayer()
-        val region = createTestRegion()
-        val regions = listOf(region, createTestRegion(1, 1), createTestRegion(2, 0), createTestRegion(3, null))
-        val state = GameState(players = listOf(player), map = GameMap(width = 4, height = 1, regions = regions))
-
-        val action = ActionQueue.GameAction(0, ActionQueue.ActionType.RECRUIT, 0)
+    fun testProcessRecruitNoBarracks() {
+        val state = createGameState()
+        val action = ActionQueue.GameAction(
+            playerId = 1,
+            type = ActionQueue.ActionType.RECRUIT,
+            targetRegionId = 1
+        )
         val newState = GameRules.processRecruit(state, action)
-
-        val updatedRegion = newState.map.getRegionById(0)!!
-        assertEquals(10, updatedRegion.population)
+        val updatedRegion = newState.map.getRegionById(1)!!
+        assertEquals(20, updatedRegion.population)
     }
 
     @Test
-    fun `processDevelop adds population and deducts gold`() {
-        val player = createTestPlayer()
-        val state = createTestGameState(player)
+    fun testProcessAttackWin() {
+        val source = createRegion(1, 1, population = 50, units = UnitStack(units = listOf(Unit(UnitType.INFANTRY, 10))))
+        val target = createRegion(2, 2, population = 5, units = UnitStack())
+        val state = createGameState(regions = listOf(source, target))
+        val action = ActionQueue.GameAction(
+            playerId = 1,
+            type = ActionQueue.ActionType.ATTACK,
+            targetRegionId = 2,
+            param = "1"
+        )
+        val newState = GameRules.processAttack(state, action)
+        val conquered = newState.map.getRegionById(2)!!
+        assertEquals(1, conquered.ownerId)
+    }
 
-        val action = ActionQueue.GameAction(0, ActionQueue.ActionType.DEVELOP, 0)
+    @Test
+    fun testProcessAttackLose() {
+        val source = createRegion(1, 1, population = 3, units = UnitStack())
+        val target = createRegion(2, 2, population = 50, units = UnitStack(units = listOf(Unit(UnitType.INFANTRY, 10))))
+        val state = createGameState(regions = listOf(source, target))
+        val action = ActionQueue.GameAction(
+            playerId = 1,
+            type = ActionQueue.ActionType.ATTACK,
+            targetRegionId = 2,
+            param = "1"
+        )
+        val newState = GameRules.processAttack(state, action)
+        val stillEnemy = newState.map.getRegionById(2)!!
+        assertEquals(2, stillEnemy.ownerId)
+    }
+
+    @Test
+    fun testProcessMoveSuccess() {
+        val source = createRegion(1, 1, population = 20)
+        val dest = createRegion(2, 1, population = 10)
+        val state = createGameState(regions = listOf(source, dest))
+        val action = ActionQueue.GameAction(
+            playerId = 1,
+            type = ActionQueue.ActionType.MOVE_TROOPS,
+            targetRegionId = 1,
+            param = "2"
+        )
+        val newState = GameRules.processMove(state, action)
+        assertEquals(10, newState.map.getRegionById(1)!!.population)
+        assertEquals(20, newState.map.getRegionById(2)!!.population)
+    }
+
+    @Test
+    fun testProcessMoveDifferentOwners() {
+        val source = createRegion(1, 1, population = 20)
+        val dest = createRegion(2, 2, population = 10)
+        val state = createGameState(regions = listOf(source, dest))
+        val action = ActionQueue.GameAction(
+            playerId = 1,
+            type = ActionQueue.ActionType.MOVE_TROOPS,
+            targetRegionId = 1,
+            param = "2"
+        )
+        val newState = GameRules.processMove(state, action)
+        assertEquals(20, newState.map.getRegionById(1)!!.population)
+        assertEquals(10, newState.map.getRegionById(2)!!.population)
+    }
+
+    @Test
+    fun testProcessDevelopSuccess() {
+        val state = createGameState()
+        val action = ActionQueue.GameAction(
+            playerId = 1,
+            type = ActionQueue.ActionType.DEVELOP,
+            targetRegionId = 1
+        )
         val newState = GameRules.processDevelop(state, action)
+        assertEquals(23, newState.map.getRegionById(1)!!.population)
+        assertEquals(190, newState.players.find { it.id == 1 }!!.resources.gold)
+    }
 
-        val updatedPlayer = newState.players.find { it.id == 0 }!!
-        val updatedRegion = newState.map.getRegionById(0)!!
+    @Test
+    fun testProcessDevelopInsufficientGold() {
+        val player = createPlayer(resources = Resources(gold = 5))
+        val state = createGameState(players = listOf(player, createPlayer(2)))
+        val action = ActionQueue.GameAction(
+            playerId = 1,
+            type = ActionQueue.ActionType.DEVELOP,
+            targetRegionId = 1
+        )
+        val newState = GameRules.processDevelop(state, action)
+        assertEquals(20, newState.map.getRegionById(1)!!.population)
+    }
 
-        assertEquals(90, updatedPlayer.resources.gold)
-        assertEquals(13, updatedRegion.population)
+    @Test
+    fun testProcessResearchSuccess() {
+        val state = createGameState()
+        val action = ActionQueue.GameAction(
+            playerId = 1,
+            type = ActionQueue.ActionType.RESEARCH,
+            targetRegionId = 1,
+            param = "AGRICULTURE"
+        )
+        val newState = GameRules.processResearch(state, action)
+        val player = newState.players.find { it.id == 1 }!!
+        assertTrue(player.techs.isResearched(TechType.AGRICULTURE))
+    }
+
+    @Test
+    fun testProcessResearchAlreadyResearched() {
+        val player = createPlayer(techs = TechState(researched = listOf(TechType.AGRICULTURE)))
+        val state = createGameState(players = listOf(player, createPlayer(2)))
+        val action = ActionQueue.GameAction(
+            playerId = 1,
+            type = ActionQueue.ActionType.RESEARCH,
+            targetRegionId = 1,
+            param = "AGRICULTURE"
+        )
+        val newState = GameRules.processResearch(state, action)
+        val updatedPlayer = newState.players.find { it.id == 1 }!!
+        assertEquals(1, updatedPlayer.techs.researched.size)
     }
 }

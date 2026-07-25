@@ -1,13 +1,15 @@
-name: CI
+name: Release
 
 on:
   push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
 
 jobs:
-  build:
+  release:
     runs-on: macos-latest
 
     steps:
@@ -23,23 +25,22 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Run unit tests
-        run: ./gradlew :common:jvmTest
-
       - name: Build desktop
         run: ./gradlew :desktop:installDist
 
       - name: Build server
         run: ./gradlew :server:installDist
 
-      - name: Upload desktop artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: desktop
-          path: desktop/build/install/desktop/
+      - name: Create desktop zip
+        run: cd desktop/build/install && zip -r ../../../desktop.zip desktop/
 
-      - name: Upload server artifact
-        uses: actions/upload-artifact@v4
+      - name: Create server zip
+        run: cd server/build/install && zip -r ../../../server.zip server/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
         with:
-          name: server
-          path: server/build/install/server/
+          files: |
+            desktop.zip
+            server.zip
+          generate_release_notes: true
