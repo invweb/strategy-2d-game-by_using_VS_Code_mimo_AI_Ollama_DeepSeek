@@ -16,4 +16,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "Strategy"
 
-include(":common", ":desktop")
+include(":common", ":desktop", ":server")
