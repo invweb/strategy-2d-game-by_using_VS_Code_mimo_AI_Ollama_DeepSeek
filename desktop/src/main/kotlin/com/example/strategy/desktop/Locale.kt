@@ -120,6 +120,18 @@ object Locale {
         Lang.EN -> "CANCEL"
     }
 
+    val SAVE_QUESTION get() = when(current) {
+        Lang.RU -> "Сохранить текущую игру?"
+        Lang.DE -> "Aktuelles Spiel speichern?"
+        Lang.EN -> "Save current game?"
+    }
+
+    val NO_SAVE get() = when(current) {
+        Lang.RU -> "НЕТ"
+        Lang.DE -> "NEIN"
+        Lang.EN -> "NO"
+    }
+
     val SAVE get() = when(current) {
         Lang.RU -> "СОХРАНИТЬ"
         Lang.DE -> "SPEICHERN"
@@ -318,6 +330,12 @@ object Locale {
         Lang.RU -> "Технологии"
         Lang.DE -> "Technologien"
         Lang.EN -> "Technologies"
+    }
+
+    val ZOOM_HINT get() = when(current) {
+        Lang.RU -> "Также можно скроллом мыши"
+        Lang.DE -> "Auch mit Mausrad möglich"
+        Lang.EN -> "Also works with scroll wheel"
     }
 
     // MapSize

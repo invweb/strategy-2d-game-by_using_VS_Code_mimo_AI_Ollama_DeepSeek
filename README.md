@@ -9,8 +9,17 @@ A prototype of a turn-based 2D strategy game inspired by "Imperialism 2" game, b
 ### Main Menu
 ![Main Menu](screenshots/menu.png)
 
+### Settings
+![Settings](screenshots/settings.png)
+
 ### Game
 ![Game Window](screenshots/game_window.png)
+
+### Load Dialog
+![Load Dialog](screenshots/load_dialog.png)
+
+### Save Dialog
+![Save Dialog](screenshots/save_dialog.png)
 
 ## Technologies
 

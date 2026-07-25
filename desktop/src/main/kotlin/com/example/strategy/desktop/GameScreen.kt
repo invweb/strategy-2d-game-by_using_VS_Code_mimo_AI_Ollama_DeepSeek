@@ -53,6 +53,8 @@ class GameScreen(private val game: StrategyGame) : ScreenAdapter() {
     private val maxZoom = 3.0f
     private val tileSize = 128f
     private val animManager = AnimationManager()
+    private var zoomHintTimer = 0f
+    private var zoomHintLabel: Label? = null
     private var soundManager: SoundManager? = null
     private var animTime = 0f
     private var aiPending = false
@@ -441,6 +443,43 @@ class GameScreen(private val game: StrategyGame) : ScreenAdapter() {
         })
         panel.add(menuBtn).fillX().padLeft(10f)
 
+        val quitBtn = TextButton(Locale.QUIT, skin)
+        quitBtn.label.setFontScale(0.75f); quitBtn.label.color = Color.RED
+        quitBtn.addListener(object : ClickListener() {
+            override fun clicked(event: InputEvent?, x: Float, y: Float) {
+                val win = Window("", skin)
+                win.isModal = true; win.isMovable = true; win.pad(16f)
+                win.add(Label(Locale.SAVE_QUESTION, skin)).colspan(2).row()
+                val saveBtn = TextButton(Locale.SAVE, skin)
+                saveBtn.label.setFontScale(0.9f); saveBtn.color = Color(0.3f, 0.6f, 0.3f, 1f)
+                saveBtn.addListener(object : ClickListener() {
+                    override fun clicked(event: InputEvent?, x: Float, y: Float) {
+                        win.remove()
+                        showSaveDialog()
+                        game.setScreen(MenuScreen(game))
+                    }
+                })
+                val noSaveBtn = TextButton(Locale.NO_SAVE, skin)
+                noSaveBtn.label.setFontScale(0.9f)
+                noSaveBtn.addListener(object : ClickListener() {
+                    override fun clicked(event: InputEvent?, x: Float, y: Float) {
+                        win.remove()
+                        game.setScreen(MenuScreen(game))
+                    }
+                })
+                val cancelBtn = TextButton(Locale.CANCEL, skin)
+                cancelBtn.label.setFontScale(0.9f)
+                cancelBtn.addListener(object : ClickListener() { override fun clicked(event: InputEvent?, x: Float, y: Float) { win.remove() } })
+                win.add(saveBtn).width(120f).padRight(8f)
+                win.add(noSaveBtn).width(120f).padRight(8f)
+                win.add(cancelBtn).width(120f)
+                win.pack()
+                win.setPosition(Gdx.graphics.width / 2f - win.width / 2f, Gdx.graphics.height / 2f - win.height / 2f)
+                stage.addActor(win)
+            }
+        })
+        panel.add(quitBtn).fillX().padLeft(10f)
+
         val saveBtn = TextButton("SAVE", skin)
         saveBtn.label.setFontScale(0.7f); saveBtn.label.color = Color.CYAN
         saveBtn.addListener(object : ClickListener() {
@@ -453,7 +492,7 @@ class GameScreen(private val game: StrategyGame) : ScreenAdapter() {
         loadBtn.addListener(object : ClickListener() {
             override fun clicked(event: InputEvent?, x: Float, y: Float) { showLoadDialog() }
         })
-        panel.add(loadBtn).fillX()
+        panel.add(loadBtn).fillX().padLeft(20f)
 
         val diploPanel = Table(skin).apply { right().top().pad(10f); defaults().pad(2f) }
         diplomacyLabel = Label(Locale.DIPLOMACY, skin)
@@ -478,9 +517,52 @@ class GameScreen(private val game: StrategyGame) : ScreenAdapter() {
             techPanel.add(b).fillX().colspan(2).row()
         }
 
+        val zoomPanel = Table(skin).apply { left().bottom().pad(10f); defaults().pad(3f) }
+        zoomHintLabel = Label("", skin)
+        zoomHintLabel!!.color = Color.LIGHT_GRAY
+        zoomHintLabel!!.setFontScale(0.7f)
+        zoomPanel.add(zoomHintLabel).colspan(2).row()
+
+        val zoomBgPix = Pixmap(16, 16, Pixmap.Format.RGBA8888).apply { setColor(1f, 1f, 0.4f, 0.35f); fill() }
+        val zoomBgTex = Texture(zoomBgPix); zoomBgPix.dispose()
+        val zoomUp = NinePatchDrawable(com.badlogic.gdx.graphics.g2d.NinePatch(zoomBgTex, 4, 4, 4, 4))
+        val zoomDownPix = Pixmap(16, 16, Pixmap.Format.RGBA8888).apply { setColor(1f, 1f, 0.4f, 0.55f); fill() }
+        val zoomDownTex = Texture(zoomDownPix); zoomDownPix.dispose()
+        val zoomDown = NinePatchDrawable(com.badlogic.gdx.graphics.g2d.NinePatch(zoomDownTex, 4, 4, 4, 4))
+        val zoomBtnStyle = TextButton.TextButtonStyle().apply {
+            font = skin.getFont("default-font")
+            fontColor = Color.WHITE
+            up = zoomUp
+            down = zoomDown
+        }
+        skin.add("zoom-btn", zoomBtnStyle)
+
+        val zoomInBtn = TextButton("+", zoomBtnStyle)
+        zoomInBtn.label.setFontScale(1.2f)
+        zoomInBtn.addListener(object : ClickListener() {
+            override fun clicked(event: InputEvent?, x: Float, y: Float) {
+                camera.zoom = (camera.zoom - 0.1f).coerceIn(minZoom, maxZoom)
+                camera.update()
+                zoomHintLabel?.setText(Locale.ZOOM_HINT)
+                zoomHintTimer = 2f
+            }
+        })
+        val zoomOutBtn = TextButton("-", zoomBtnStyle)
+        zoomOutBtn.label.setFontScale(1.2f)
+        zoomOutBtn.addListener(object : ClickListener() {
+            override fun clicked(event: InputEvent?, x: Float, y: Float) {
+                camera.zoom = (camera.zoom + 0.1f).coerceIn(minZoom, maxZoom)
+                camera.update()
+                zoomHintLabel?.setText(Locale.ZOOM_HINT)
+                zoomHintTimer = 2f
+            }
+        })
+        zoomPanel.add(zoomInBtn).width(50f)
+        zoomPanel.add(zoomOutBtn).width(50f)
+
         root.add().expandY()
         root.add(diploPanel).right().top().pad(10f).padTop(40f).row()
-        root.add(techPanel).left().bottom().pad(10f)
+        root.add(zoomPanel).left().bottom().pad(10f)
         root.add(panel).right().bottom().pad(10f)
         stage.addActor(root)
     }
@@ -804,6 +886,10 @@ class GameScreen(private val game: StrategyGame) : ScreenAdapter() {
             camera.update()
             batch.projectionMatrix = camera.combined
             animTime += delta
+            if (zoomHintTimer > 0f) {
+                zoomHintTimer -= delta
+                if (zoomHintTimer <= 0f) { zoomHintLabel?.setText(""); zoomHintTimer = 0f }
+            }
 
             batch.begin()
             for (region in state.map.regions) {
@@ -971,7 +1057,7 @@ class GameScreen(private val game: StrategyGame) : ScreenAdapter() {
         })
         s.add("default", Label.LabelStyle(font, Color.WHITE))
 
-        val windowBgPix = Pixmap(32, 32, Pixmap.Format.RGBA8888).apply { setColor(0.12f, 0.14f, 0.2f, 1f); fill() }
+        val windowBgPix = Pixmap(32, 32, Pixmap.Format.RGBA8888).apply { setColor(0.08f, 0.09f, 0.14f, 1f); fill() }
         val windowBgTex = Texture(windowBgPix); windowBgPix.dispose()
         val windowBg = NinePatchDrawable(com.badlogic.gdx.graphics.g2d.NinePatch(windowBgTex, 4, 4, 4, 4))
         val bf = font
