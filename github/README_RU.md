@@ -239,57 +239,51 @@ Strategy/
 
 ## Файлы дистрибутива
 
-Эта папка содержит готовые к распространению артефакты:
+Эта папка содержит готовые к запуску дистрибутивы игры:
 
-| Файл | Размер | Описание |
-|------|--------|----------|
-| `desktop-0.1.0.zip` | ~19 МБ | Десктоп-игра со всеми зависимостями (macOS/Linux/Windows) |
-| `server-0.1.0.zip` | ~13 МБ | Игровой сервер со всеми зависимостями |
-| `desktop-0.1.0.jar` | ~232 КБ | JAR десктопа (требует `common-jvm-0.1.0.jar` в classpath) |
-| `server-0.1.0.jar` | ~49 КБ | JAR сервера (требует зависимости в classpath) |
-| `common-jvm-0.1.0.jar` | ~201 КБ | Общая библиотека (для десктопа и сервера) |
-| `README.md` | Документация на английском |
-| `README_RU.md` | Документация на русском |
-| `README_DE.md` | Документация на немецком |
+```
+github/
+├── desktop/                    # Десктоп-игра (macOS/Linux/Windows)
+│   ├── bin/
+│   │   ├── desktop             # Скрипт запуска (macOS/Linux)
+│   │   └── desktop.bat         # Скрипт запуска (Windows)
+│   └── lib/                    # Все зависимости (65 JAR-файлов)
+├── server/                     # Игровой сервер
+│   ├── bin/
+│   │   ├── server              # Скрипт запуска (macOS/Linux)
+│   │   └── server.bat          # Скрипт запуска (Windows)
+│   └── lib/                    # Все зависимости (45 JAR-файлов)
+├── README.md                   # Документация на английском
+├── README_RU.md                # Документация на русском
+└── README_DE.md                # Документация на немецком
+```
 
-### Запуск из ZIP-дистрибутива
+### Запуск игры
 
-1. Распакуйте ZIP:
-   ```bash
-   unzip desktop-0.1.0.zip
-   cd desktop
-   ```
-
-2. Убедитесь, что установлен **JDK 17+**:
-   ```bash
-   java -version  # Должно показать 17.x или выше
-   ```
-
-3. Запустите игру:
-   ```bash
-   # macOS/Linux
-   ./bin/desktop
-
-   # Windows
-   bin\desktop.bat
-   ```
-
-### Запуск из JAR
-
+**macOS/Linux:**
 ```bash
-java -jar desktop-0.1.0.jar
+cd desktop
+./bin/desktop
+```
+
+**Windows:**
+```bash
+cd desktop
+bin\desktop.bat
 ```
 
 ### Запуск сервера
 
 ```bash
-# Из ZIP
 cd server
-./bin/server
-
-# Из JAR
-java -jar server-0.1.0.jar
+./bin/server       # macOS/Linux
+bin\server.bat     # Windows
 ```
+
+### Требования
+
+- **JDK 17+** — проверить: `java -version`
+- Дополнительные зависимости не нужны — все библиотеки в `lib/`
 
 ## Запуск из исходников
 

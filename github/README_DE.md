@@ -239,57 +239,51 @@ Wenn Sie **ZUG BEENDEN** drücken:
 
 ## Distributionsdateien
 
-Dieser Ordner enthält vorkompilierte Artefakte zur Distribution:
+Dieser Ordner enthält startfertige Spieledistributionen:
 
-| Datei | Größe | Beschreibung |
-|-------|-------|-------------|
-| `desktop-0.1.0.zip` | ~19 MB | Desktop-Spiel mit allen Abhängigkeiten (macOS/Linux/Windows) |
-| `server-0.1.0.zip` | ~13 MB | SpielsServer mit allen Abhängigkeiten |
-| `desktop-0.1.0.jar` | ~232 KB | Desktop-JAR (benötigt `common-jvm-0.1.0.jar` im Classpath) |
-| `server-0.1.0.jar` | ~49 KB | Server-JAR (benötigt Abhängigkeiten im Classpath) |
-| `common-jvm-0.1.0.jar` | ~201 KB | Gemeinsame Bibliothek (für Desktop und Server) |
-| `README.md` | Dokumentation auf Englisch |
-| `README_RU.md` | Dokumentation auf Russisch |
-| `README_DE.md` | Dokumentation auf Deutsch |
+```
+github/
+├── desktop/                    # Desktop-Spiel (macOS/Linux/Windows)
+│   ├── bin/
+│   │   ├── desktop             # Startskript (macOS/Linux)
+│   │   └── desktop.bat         # Startskript (Windows)
+│   └── lib/                    # Alle Abhängigkeiten (65 JARs)
+├── server/                     # SpielsServer
+│   ├── bin/
+│   │   ├── server              # Startskript (macOS/Linux)
+│   │   └── server.bat          # Startskript (Windows)
+│   └── lib/                    # Alle Abhängigkeiten (45 JARs)
+├── README.md                   # Dokumentation auf Englisch
+├── README_RU.md                # Dokumentation auf Russisch
+└── README_DE.md                # Dokumentation auf Deutsch
+```
 
-### Starten aus der ZIP-Distribution
+### Spiel starten
 
-1. Entpacken Sie die ZIP:
-   ```bash
-   unzip desktop-0.1.0.zip
-   cd desktop
-   ```
-
-2. Stellen Sie sicher, dass **JDK 17+** installiert ist:
-   ```bash
-   java -version  # Sollte 17.x oder höher anzeigen
-   ```
-
-3. Starten Sie das Spiel:
-   ```bash
-   # macOS/Linux
-   ./bin/desktop
-
-   # Windows
-   bin\desktop.bat
-   ```
-
-### Starten aus dem JAR
-
+**macOS/Linux:**
 ```bash
-java -jar desktop-0.1.0.jar
+cd desktop
+./bin/desktop
+```
+
+**Windows:**
+```bash
+cd desktop
+bin\desktop.bat
 ```
 
 ### Server starten
 
 ```bash
-# Aus ZIP
 cd server
-./bin/server
-
-# Aus JAR
-java -jar server-0.1.0.jar
+./bin/server       # macOS/Linux
+bin\server.bat     # Windows
 ```
+
+### Anforderungen
+
+- **JDK 17+** — prüfen mit `java -version`
+- Keine zusätzlichen Abhängigkeiten nötig — alle Bibliotheken in `lib/`
 
 ## Starten aus dem Quellcode
 

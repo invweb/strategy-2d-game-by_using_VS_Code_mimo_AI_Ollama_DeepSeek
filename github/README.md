@@ -239,57 +239,51 @@ When you press **END TURN**:
 
 ## Distribution Files
 
-This folder contains pre-built artifacts ready for distribution:
+This folder contains pre-built game distributions ready to run:
 
-| File | Size | Description |
-|------|------|-------------|
-| `desktop-0.1.0.zip` | ~19 MB | Desktop game with all dependencies (macOS/Linux/Windows) |
-| `server-0.1.0.zip` | ~13 MB | Game server with all dependencies |
-| `desktop-0.1.0.jar` | ~232 KB | Desktop JAR (requires `common-jvm-0.1.0.jar` on classpath) |
-| `server-0.1.0.jar` | ~49 KB | Server JAR (requires dependencies on classpath) |
-| `common-jvm-0.1.0.jar` | ~201 KB | Shared library (used by both desktop and server) |
-| `README.md` | English documentation |
-| `README_RU.md` | Russian documentation |
-| `README_DE.md` | German documentation |
+```
+github/
+├── desktop/                    # Desktop game (macOS/Linux/Windows)
+│   ├── bin/
+│   │   ├── desktop             # Launch script (macOS/Linux)
+│   │   └── desktop.bat         # Launch script (Windows)
+│   └── lib/                    # All dependencies (65 JARs)
+├── server/                     # Game server
+│   ├── bin/
+│   │   ├── server              # Launch script (macOS/Linux)
+│   │   └── server.bat          # Launch script (Windows)
+│   └── lib/                    # All dependencies (45 JARs)
+├── README.md                   # English documentation
+├── README_RU.md                # Russian documentation
+└── README_DE.md                # German documentation
+```
 
-### Running from ZIP distribution
+### Running the game
 
-1. Extract the ZIP:
-   ```bash
-   unzip desktop-0.1.0.zip
-   cd desktop
-   ```
-
-2. Make sure you have **JDK 17+** installed:
-   ```bash
-   java -version  # Should show 17.x or higher
-   ```
-
-3. Run the game:
-   ```bash
-   # macOS/Linux
-   ./bin/desktop
-
-   # Windows
-   bin\desktop.bat
-   ```
-
-### Running from JAR
-
+**macOS/Linux:**
 ```bash
-java -jar desktop-0.1.0.jar
+cd desktop
+./bin/desktop
+```
+
+**Windows:**
+```bash
+cd desktop
+bin\desktop.bat
 ```
 
 ### Running the server
 
 ```bash
-# From ZIP
 cd server
-./bin/server
-
-# From JAR
-java -jar server-0.1.0.jar
+./bin/server       # macOS/Linux
+bin\server.bat     # Windows
 ```
+
+### Requirements
+
+- **JDK 17+** — check with `java -version`
+- No additional dependencies needed — all libraries included in `lib/`
 
 ## Running from Source
 
@@ -308,35 +302,31 @@ July 2026
 
 **Strategy** — пошаговая 2D-стратегия на Kotlin + libGDX. Работает на macOS, Windows, Linux. Три языка: EN, RU, DE.
 
-### Файлы в папке
+### Структура папки
 
-| Файл | Что это |
-|------|---------|
-| `desktop-0.1.0.zip` | Десктоп-игра со всеми зависимостями |
-| `server-0.1.0.zip` | Игровой сервер со всеми зависимостями |
-| `desktop-0.1.0.jar` | Тонкий JAR десктопа |
-| `server-0.1.0.jar` | Тонкий JAR сервера |
-| `common-jvm-0.1.0.jar` | Общая библиотека |
-| `README_RU.md` | Документация на русском |
-| `README_DE.md` | Документация на немецком |
+```
+github/
+├── desktop/        # Десктоп-игра (все зависимости в lib/)
+│   ├── bin/desktop # Скрипт запуска (macOS/Linux)
+│   └── lib/        # 65 JAR-файлов зависимостей
+├── server/         # Игровой сервер
+│   ├── bin/server  # Скрипт запуска (macOS/Linux)
+│   └── lib/        # 45 JAR-файлов зависимостей
+└── README*.md      # Документация (EN/RU/DE)
+```
 
 ### Как запустить
 
-**Из ZIP (рекомендуется):**
 ```bash
-unzip desktop-0.1.0.zip && cd desktop
+cd desktop
 ./bin/desktop          # macOS/Linux
 bin\desktop.bat        # Windows
 ```
 
-**Из JAR:**
-```bash
-java -jar desktop-0.1.0.jar
-```
-
 **Сервер:**
 ```bash
-java -jar server-0.1.0.jar
+cd server
+./bin/server
 ```
 
-**Требуется JDK 17+.** Игра работает без Ollama/LM Studio — ИИ встроенный.
+**Требуется JDK 17+.** Все зависимости уже в `lib/` — ничего скачивать не нужно. ИИ работает без Ollama/LM Studio.
