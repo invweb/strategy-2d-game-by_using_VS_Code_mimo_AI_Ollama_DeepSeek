@@ -211,6 +211,32 @@ When you press **END TURN**:
 - [Русский](HOW_TO_PLAY_RU.md)
 - [Deutsch](HOW_TO_PLAY_DE.md)
 
+## Known Issues
+
+- Multiplayer is not supported (single player vs AI only)
+- Ollama/LM Studio calls may briefly freeze the UI if the server is slow to respond (reduced by async AI, but timeout can still cause brief pauses)
+
+## Changelog
+
+### v0.2.0 (July 2026)
+- AI backend selection: Ollama, LM Studio, or Fallback
+- Localization: English, Russian, German
+- Unit icons on map (Infantry, Cavalry, Siege)
+- Box selection for multiple regions
+- Named save/load with delete confirmation
+- Zoom buttons (+/-) with scroll wheel hint
+- Tutorial hint on first game start
+- Crash logging to file
+- GitHub Actions CI
+- Game guides in 3 languages
+
+### v0.1.0 (July 2026)
+- Initial release with core gameplay
+- Ollama AI with fallback strategy
+- Diplomacy, tech tree, fog of war
+- Animations, sounds, minimap
+- Map configuration, difficulty levels
+
 ## Running
 
 ```bash

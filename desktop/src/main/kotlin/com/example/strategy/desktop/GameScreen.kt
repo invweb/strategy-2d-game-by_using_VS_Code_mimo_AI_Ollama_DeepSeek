@@ -59,6 +59,8 @@ class GameScreen(private val game: StrategyGame) : ScreenAdapter() {
     private var animTime = 0f
     private var aiPending = false
     private var alive = false
+    private var tutorialTimer = 8f
+    private var tutorialLabel: Label? = null
 
     private lateinit var infoLabel: Label
     private lateinit var statusLabel: Label
@@ -224,6 +226,15 @@ class GameScreen(private val game: StrategyGame) : ScreenAdapter() {
         state = com.example.strategy.logic.TurnManager.startTurn(state)
         game.gameState = state
         updateInfoLabel()
+
+        tutorialTimer = 8f
+        tutorialLabel = Label(Locale.TUTORIAL_HINT, skin)
+        tutorialLabel!!.color = Color(1f, 1f, 0.5f, 0.9f)
+        tutorialLabel!!.setFontScale(0.9f)
+        tutorialLabel!!.setWrap(true)
+        tutorialLabel!!.setSize(500f, 60f)
+        tutorialLabel!!.setPosition(Gdx.graphics.width / 2f - 250f, Gdx.graphics.height - 50f)
+        stage.addActor(tutorialLabel)
     }
 
     private fun selectRegionsInBox() {
@@ -895,6 +906,10 @@ class GameScreen(private val game: StrategyGame) : ScreenAdapter() {
             if (zoomHintTimer > 0f) {
                 zoomHintTimer -= delta
                 if (zoomHintTimer <= 0f) { zoomHintLabel?.setText(""); zoomHintTimer = 0f }
+            }
+            if (tutorialTimer > 0f) {
+                tutorialTimer -= delta
+                if (tutorialTimer <= 0f) { tutorialLabel?.remove(); tutorialTimer = 0f }
             }
 
             batch.begin()

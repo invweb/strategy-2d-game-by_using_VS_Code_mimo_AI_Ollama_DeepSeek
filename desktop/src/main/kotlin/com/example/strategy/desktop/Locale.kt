@@ -368,6 +368,12 @@ object Locale {
         Lang.EN -> "LM Studio Model:"
     }
 
+    val TUTORIAL_HINT get() = when(current) {
+        Lang.RU -> "Выберите регион кликом. Постройте здание. Вербуйте юнитов. Атакуйте врага!"
+        Lang.DE -> "Klicken Sie auf eine Region. Bauen Sie ein Gebäude. Rekrutieren Sie Einheiten. Greifen Sie den Feind an!"
+        Lang.EN -> "Click a region. Build a structure. Recruit units. Attack the enemy!"
+    }
+
     // MapSize
     val SMALL get() = when(current) {
         Lang.RU -> "Маленький"; Lang.DE -> "Klein"; Lang.EN -> "Small"
