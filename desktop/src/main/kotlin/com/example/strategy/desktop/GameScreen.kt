@@ -38,11 +38,13 @@ class GameScreen(private val game: StrategyGame) : ScreenAdapter() {
     private var selectedRegion: Region? = null
     private val selectedRegions = mutableListOf<Region>()
     private var state = game.gameState
+    private var stateBeforeAction: GameState? = null
     private var actionUsedThisTurn = false
     private var attackMode = false
     private var attackSourceId = -1
     private var moveMode = false
     private var moveSourceId = -1
+    private var gameOver = false
 
     private val tileSize = 128f
     private val animManager = AnimationManager()
@@ -103,6 +105,7 @@ class GameScreen(private val game: StrategyGame) : ScreenAdapter() {
             statusLabelSetter = { statusLabel.setText(it) },
             statusLabelColorSetter = { statusLabel.color = it },
             soundPlayer = { soundManager?.play(it) },
+            animProvider = { animManager },
             mapRenderer = mapRenderer
         )
 
@@ -229,6 +232,13 @@ class GameScreen(private val game: StrategyGame) : ScreenAdapter() {
             }
         })
         panel.add(quitBtn).fillX().padLeft(10f)
+
+        val undoBtn = TextButton(Locale.UNDO, skin)
+        undoBtn.label.setFontScale(0.7f); undoBtn.label.color = Color(0.8f, 0.8f, 0.2f, 1f)
+        undoBtn.addListener(object : ClickListener() {
+            override fun clicked(event: InputEvent?, x: Float, y: Float) { undoAction() }
+        })
+        panel.add(undoBtn).fillX().padLeft(10f)
 
         val diploPanel = Table(skin).apply { right().top().pad(10f); defaults().pad(2f) }
         diplomacyLabel = Label(Locale.DIPLOMACY, skin)
@@ -498,7 +508,7 @@ class GameScreen(private val game: StrategyGame) : ScreenAdapter() {
                 runAITurns(); updateInfoLabel()
                 return
             }
-            if (actionUsedThisTurn || aiPending) return
+            if (actionUsedThisTurn || aiPending || gameOver) return
             if (actionType.startsWith("DIPLO_")) { handleDiploAction(actionType); return }
             if (actionType.startsWith(Actions.RESEARCH + ":")) {
                 val action = ActionQueue.GameAction(state.currentPlayerId, ActionQueue.ActionType.RESEARCH, 0, actionType.removePrefix(Actions.RESEARCH + ":"))
@@ -533,9 +543,11 @@ class GameScreen(private val game: StrategyGame) : ScreenAdapter() {
                 Actions.DEVELOP -> ActionQueue.GameAction(state.currentPlayerId, ActionQueue.ActionType.DEVELOP, region.id)
                 else -> return
             }
+            stateBeforeAction = state
             ActionQueue.enqueue(action); state = ActionQueue.processAll(state)
             game.gameState = state; selectedRegion = state.map.getRegionById(region.id); actionUsedThisTurn = true
             updateInfoLabel()
+            checkVictory()
         } catch (e: Exception) {
             Gdx.app.error("GameScreen", "Action error: ${e.message}")
         }
@@ -553,6 +565,47 @@ class GameScreen(private val game: StrategyGame) : ScreenAdapter() {
         ActionQueue.enqueue(action); state = ActionQueue.processAll(state)
         game.gameState = state; actionUsedThisTurn = true
         soundManager?.play(SoundManager.SoundType.ALLIANCE); updateInfoLabel()
+        checkVictory()
+    }
+
+    private fun checkVictory() {
+        val myTerritories = state.map.regions.count { it.ownerId == 0 && it.terrain != TerrainType.WATER }
+        val enemyTerritories = state.map.regions.count { it.ownerId == 1 && it.terrain != TerrainType.WATER }
+        if (enemyTerritories == 0 && myTerritories > 0) {
+            showGameOverDialog(Locale.VICTORY)
+        } else if (myTerritories == 0 && enemyTerritories > 0) {
+            showGameOverDialog(Locale.DEFEAT)
+        }
+    }
+
+    private fun showGameOverDialog(message: String) {
+        gameOver = true
+        val win = Window("", skin)
+        win.isModal = true; win.isMovable = true; win.pad(24f)
+        val label = Label(message, skin)
+        label.setFontScale(1.5f)
+        label.color = if (message == Locale.VICTORY) Color.GOLD else Color.RED
+        win.add(label).row()
+        val menuBtn = TextButton(Locale.MENU, skin)
+        menuBtn.label.setFontScale(0.9f)
+        menuBtn.addListener(object : ClickListener() {
+            override fun clicked(event: InputEvent?, x: Float, y: Float) { win.remove(); game.setScreen(MenuScreen(game)) }
+        })
+        win.add(menuBtn).width(150f).padTop(15f)
+        win.pack()
+        win.setPosition(Gdx.graphics.width / 2f - win.width / 2f, Gdx.graphics.height / 2f - win.height / 2f)
+        stage.addActor(win)
+    }
+
+    private fun undoAction() {
+        if (stateBeforeAction == null || !actionUsedThisTurn) return
+        state = stateBeforeAction!!
+        game.gameState = state
+        selectedRegion = null; selectedRegions.clear()
+        actionUsedThisTurn = false
+        attackMode = false; attackSourceId = -1; moveMode = false; moveSourceId = -1
+        stateBeforeAction = null
+        updateInfoLabel()
     }
 
     private fun runAITurns() {

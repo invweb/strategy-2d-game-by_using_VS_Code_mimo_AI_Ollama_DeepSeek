@@ -492,4 +492,14 @@ object Locale {
     val POP get() = when(current) {
         Lang.RU -> "нас"; Lang.DE -> "Bev"; Lang.EN -> "pop"
     }
+
+    val UNDO get() = when(current) {
+        Lang.RU -> "ОТМЕНИТЬ"; Lang.DE -> "RÜCKGÄNGIG"; Lang.EN -> "UNDO"
+    }
+    val VICTORY get() = when(current) {
+        Lang.RU -> "ПОБЕДА!"; Lang.DE -> "SIEG!"; Lang.EN -> "VICTORY!"
+    }
+    val DEFEAT get() = when(current) {
+        Lang.RU -> "ПОРАЖЕНИЕ"; Lang.DE -> "NIEDERLAGE"; Lang.EN -> "DEFEAT"
+    }
 }

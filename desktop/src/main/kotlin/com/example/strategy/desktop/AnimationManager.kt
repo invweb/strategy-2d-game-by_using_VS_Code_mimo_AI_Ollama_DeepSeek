@@ -24,7 +24,8 @@ class AnimationManager {
         MOVE,
         ATTACK,
         BUILD,
-        RESEARCH
+        RESEARCH,
+        DAMAGE
     }
 
     fun addMove(fromX: Float, fromY: Float, toX: Float, toY: Float) {
@@ -32,7 +33,11 @@ class AnimationManager {
     }
 
     fun addAttack(x: Float, y: Float) {
-        animations.add(GameAnimation(AnimType.ATTACK, x, y, x, y, duration = 0.3f, color = Color(1f, 0.2f, 0.2f, 0.9f)))
+        animations.add(GameAnimation(AnimType.ATTACK, x, y, x, y, duration = 0.4f, color = Color(1f, 0.2f, 0.2f, 0.9f)))
+    }
+
+    fun addDamage(x: Float, y: Float, damage: Int) {
+        animations.add(GameAnimation(AnimType.DAMAGE, x, y, x, y - 30f, duration = 1f, color = Color(1f, 0.3f, 0.3f, 0.9f)))
     }
 
     fun addBuild(x: Float, y: Float) {
@@ -80,6 +85,12 @@ class AnimationManager {
                     val wobble = kotlin.math.sin(anim.progress * 6.28f * 3f) * 5f
                     sr.setColor(anim.color.r, anim.color.g, anim.color.b, alpha * 0.7f)
                     sr.rect(anim.fromX - size / 2f + wobble, anim.fromY, size, size)
+                }
+                AnimType.DAMAGE -> {
+                    val cx = anim.fromX + (anim.toX - anim.fromX) * anim.progress
+                    val cy = anim.fromY + (anim.toY - anim.fromY) * anim.progress
+                    sr.setColor(anim.color.r, anim.color.g, anim.color.b, alpha * 0.8f)
+                    sr.rect(cx - 6f, cy - 6f, 12f, 12f)
                 }
             }
         }

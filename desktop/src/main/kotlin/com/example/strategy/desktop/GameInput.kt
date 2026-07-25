@@ -35,6 +35,7 @@ class GameInput(
     private val statusLabelSetter: (String) -> Unit,
     private val statusLabelColorSetter: (com.badlogic.gdx.graphics.Color) -> Unit,
     private val soundPlayer: (SoundManager.SoundType) -> Unit,
+    private val animProvider: () -> AnimationManager,
     private val mapRenderer: MapRenderer
 ) {
     private var lastPanX = 0
@@ -72,13 +73,13 @@ class GameInput(
                 if (attackModeProvider() && region != null && region.ownerId != stateProvider().currentPlayerId && region.terrain != TerrainType.WATER) {
                     val sourceRegion = stateProvider().map.getRegionById(attackSourceIdProvider())
                     if (sourceRegion != null) {
-                        val animManager = AnimationManager()
                         val fromX = sourceRegion.tileX * tileSize + tileSize / 2f
                         val fromY = (stateProvider().map.height - 1 - sourceRegion.tileY) * tileSize + tileSize / 2f
                         val toX = region.tileX * tileSize + tileSize / 2f
                         val toY = (stateProvider().map.height - 1 - region.tileY) * tileSize + tileSize / 2f
-                        animManager.addMove(fromX, fromY, toX, toY)
-                        animManager.addAttack(toX, toY)
+                        animProvider().addMove(fromX, fromY, toX, toY)
+                        animProvider().addAttack(toX, toY)
+                        animProvider().addDamage(toX, toY, 0)
                         soundPlayer(SoundManager.SoundType.ATTACK)
                     }
                     val action = ActionQueue.GameAction(stateProvider().currentPlayerId, ActionQueue.ActionType.ATTACK, region.id, attackSourceIdProvider().toString())
