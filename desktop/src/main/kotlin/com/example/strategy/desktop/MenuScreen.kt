@@ -162,6 +162,15 @@ class MenuScreen(private val game: StrategyGame) : ScreenAdapter() {
 
         root.add(newGameBtn).width(300f).height(60f).padBottom(15f).row()
         root.add(loadBtn).width(300f).height(60f).padBottom(15f).row()
+
+        val multiBtn = makeButton(Locale.MULTIPLAYER, Color(0.3f, 0.5f, 0.7f, 1f))
+        multiBtn.addListener(object : ClickListener() {
+            override fun clicked(event: InputEvent?, x: Float, y: Float) {
+                game.setScreen(LobbyScreen(game))
+            }
+        })
+        root.add(multiBtn).width(300f).height(60f).padBottom(15f).row()
+
         root.add(settingsBtn).width(300f).height(60f).padBottom(15f).row()
         root.add(quitBtn).width(300f).height(60f).padBottom(15f).row()
 

@@ -502,4 +502,8 @@ object Locale {
     val DEFEAT get() = when(current) {
         Lang.RU -> "ПОРАЖЕНИЕ"; Lang.DE -> "NIEDERLAGE"; Lang.EN -> "DEFEAT"
     }
+
+    val MULTIPLAYER get() = when(current) {
+        Lang.RU -> "СЕТЕВАЯ ИГРА"; Lang.DE -> "NETZWERKSPIEL"; Lang.EN -> "MULTIPLAYER"
+    }
 }
