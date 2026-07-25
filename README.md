@@ -27,6 +27,7 @@ A prototype of a turn-based 2D strategy game inspired by "Imperialism 2" game, b
 - **libGDX 1.12.1** — rendering, input, UI, FreeType fonts
 - **kotlinx.serialization** — JSON serialization
 - **Ollama** — local AI server for opponent intelligence
+- **LM Studio** — alternative local AI server (OpenAI-compatible API)
 - **DeepSeek R1 (7B)** — reasoning model used for AI decision making
 
 ## Features
@@ -68,7 +69,8 @@ Strategy/
 │       ├── pathfinding/
 │       │   └── AStar.kt             # Pure Kotlin A*
 │       ├── ai/
-│       │   └── OllamaAI.kt          # Ollama integration
+│       │   ├── OllamaAI.kt          # AI engine (Ollama + LM Studio)
+│       │   └── AISettings.kt        # AI backend configuration
 │       └── platform/
 │           ├── Platform.kt          # Platform abstraction
 │           ├── HttpClient.kt        # HTTP interface
@@ -151,13 +153,29 @@ Open **SETTINGS** in the main menu to switch between:
 
 Language preference is saved automatically.
 
-## AI (Ollama)
+## AI
 
-### Setup
+The game supports **3 AI backends** — select in **SETTINGS**:
 
+### None (Fallback)
+Rule-based AI, no external dependencies required. Works immediately.
+
+### Ollama
+Local AI server running deepseek-r1:7b.
+
+**Setup:**
 1. Install Ollama: `curl -fsSL https://ollama.ai/install.sh | sh`
 2. Pull model: `ollama pull deepseek-r1:7b`
 3. Start Ollama: `ollama serve`
+
+### LM Studio
+Alternative local AI server with OpenAI-compatible API.
+
+**Setup:**
+1. Download and install [LM Studio](https://lmstudio.ai)
+2. Load a model (e.g., DeepSeek, Llama, Mistral)
+3. Start the local server (default: `http://localhost:1234`)
+4. Set URL and model name in **SETTINGS**
 
 ### How it works
 
@@ -166,16 +184,18 @@ When you press **END TURN**:
 2. Turn switches to the AI player
 3. `TurnManager.startTurn()` applies income, upkeep, fog of war, and random events for the AI
 4. `OllamaAI.decide()` is called in a **background thread** (non-blocking):
+   - Checks `AISettings.backend` to determine which AI engine to use
    - Formats a prompt with AI's resources, territories, enemy positions, diplomacy status
-   - Sends HTTP POST to Ollama (`deepseek-r1:7b`) with connect timeout 3s / read timeout 5s
+   - **Ollama**: sends HTTP POST to `{url}/api/generate`
+   - **LM Studio**: sends HTTP POST to `{url}/v1/chat/completions` (OpenAI-compatible format)
    - Model analyzes the situation and returns one action (e.g., `BUILD_FARM:3`, `RECRUIT:7`)
 5. The AI action is dispatched back to the GL thread via `Gdx.app.postRunnable`
 6. `applyAIAction()` executes the action, then `TurnManager.endTurn()` switches back to the player
-7. If the AI response takes too long or Ollama is unreachable, **fallback AI** runs immediately (rule-based, no HTTP needed)
+7. If the AI response takes too long or the server is unreachable, **fallback AI** runs immediately (rule-based, no HTTP needed)
 
-### Fallback (No Ollama Required)
+### Fallback (No Server Required)
 
-**The game works fully without Ollama.** If Ollama is unavailable, the AI uses a rule-based strategy:
+**The game works fully without Ollama or LM Studio.** If the selected backend is unavailable, the AI uses a rule-based strategy:
 
 1. Build Barracks if near enemy and can afford
 2. Build Walls if has Barracks and near enemy
@@ -184,6 +204,12 @@ When you press **END TURN**:
 5. Recruit troops if Barracks exist (if can afford)
 6. Develop regions if Gold is available (if can afford)
 7. Propose trade if neutral and wealthy
+
+## Game Guides
+
+- [English](HOW_TO_PLAY_EN.md)
+- [Русский](HOW_TO_PLAY_RU.md)
+- [Deutsch](HOW_TO_PLAY_DE.md)
 
 ## Running
 
