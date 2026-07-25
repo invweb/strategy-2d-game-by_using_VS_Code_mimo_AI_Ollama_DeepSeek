@@ -418,4 +418,67 @@ object Locale {
     fun terrainName(t: String): String = when(t) {
         "BALANCED" -> BALANCED; "CONTINENTAL" -> CONTINENTAL; "ISLANDS" -> ISLANDS; else -> t
     }
+
+    // GameScreen UI
+    val BUILD_FARM get() = when(current) {
+        Lang.RU -> "Ферма (10Е 5Д)"; Lang.DE -> "Farm (10N 5H)"; Lang.EN -> "Farm (10F 5W)"
+    }
+    val BUILD_LUMBER get() = when(current) {
+        Lang.RU -> "Лесопилка (15Д)"; Lang.DE -> "Sägewerk (15H)"; Lang.EN -> "Lumber Mill (15W)"
+    }
+    val BUILD_BARRACKS_COST get() = when(current) {
+        Lang.RU -> "Казарма (15Д 10К 10З)"; Lang.DE -> "Kaserne (15H 10S 10G)"; Lang.EN -> "Barracks (15W 10S 10G)"
+    }
+    val BUILD_MINE_COST get() = when(current) {
+        Lang.RU -> "Шахта (5Д 15К 5Ж)"; Lang.DE -> "Mine (5H 15S 5E)"; Lang.EN -> "Mine (5W 15S 5I)"
+    }
+    val RECRUIT_COST get() = when(current) {
+        Lang.RU -> "Вербовка (10Е 5З)"; Lang.DE -> "Rekrutieren (10N 5G)"; Lang.EN -> "Recruit (10F 5G)"
+    }
+    val RECRUIT_INFANTRY_COST get() = when(current) {
+        Lang.RU -> "Пехота (5Е 3З)"; Lang.DE -> "Infanterie (5N 3G)"; Lang.EN -> "Infantry (5F 3G)"
+    }
+    val RECRUIT_CAVALRY_COST get() = when(current) {
+        Lang.RU -> "Кавалерия (10Е 8З 5Д)"; Lang.DE -> "Kavallerie (10N 8G 5H)"; Lang.EN -> "Cavalry (10F 8G 5W)"
+    }
+    val RECRUIT_SIEGE_COST get() = when(current) {
+        Lang.RU -> "Осада (15Д 10Ж 10З)"; Lang.DE -> "Belagerung (15H 10E 10G)"; Lang.EN -> "Siege (15W 10I 10G)"
+    }
+    val DEVELOP_COST get() = when(current) {
+        Lang.RU -> "Развитие (10З)"; Lang.DE -> "Entwickeln (10G)"; Lang.EN -> "Develop (10G)"
+    }
+    val ATTACK_MODE get() = when(current) {
+        Lang.RU -> "РЕЖИМ АТАКИ: нажмите на вражеский регион"; Lang.DE -> "ANGRIFFS-MODUS: Klicken Sie auf feindliche Region"; Lang.EN -> "ATTACK MODE: Click enemy region to attack from"
+    }
+    val MOVE_MODE get() = when(current) {
+        Lang.RU -> "РЕЖИМ ПЕРЕМЕЩЕНИЯ: нажмите на ваш регион"; Lang.DE -> "BEWEGUNGS-MODUS: Klicken Sie auf Ihre Region"; Lang.EN -> "MOVE MODE: Click your region to move troops from"
+    }
+    val NO_HISTORY get() = when(current) {
+        Lang.RU -> "Нет истории"; Lang.DE -> "Keine Historie"; Lang.EN -> "No history yet"
+    }
+    val STATS_HEADER get() = when(current) {
+        Lang.RU -> "--- Статистика ---"; Lang.DE -> "--- Statistik ---"; Lang.EN -> "--- Stats ---"
+    }
+    val SAVED get() = when(current) {
+        Lang.RU -> "Сохранено: "; Lang.DE -> "Gespeichert: "; Lang.EN -> "Saved: "
+    }
+    val SAVE_FAILED get() = when(current) {
+        Lang.RU -> "Ошибка сохранения!"; Lang.DE -> "Speichern fehlgeschlagen!"; Lang.EN -> "Save FAILED!"
+    }
+    val LOADED get() = when(current) {
+        Lang.RU -> "Загружено: "; Lang.DE -> "Geladen: "; Lang.EN -> "Loaded: "
+    }
+    val LOAD_FAILED get() = when(current) {
+        Lang.RU -> "Ошибка загрузки!"; Lang.DE -> "Laden fehlgeschlagen!"; Lang.EN -> "Load FAILED!"
+    }
+    val ALL_SAVES_DELETED get() = when(current) {
+        Lang.RU -> "Все сохранения удалены"; Lang.DE -> "Alle Spielstände gelöscht"; Lang.EN -> "All saves deleted"
+    }
+
+    val MOVE_BTN get() = when(current) {
+        Lang.RU -> "ПЕРЕМЕСТИТЬ"; Lang.DE -> "BEWEGEN"; Lang.EN -> "MOVE"
+    }
+    val ATTACK_BTN get() = when(current) {
+        Lang.RU -> "АТАКА"; Lang.DE -> "ANGREIFEN"; Lang.EN -> "ATTACK"
+    }
 }

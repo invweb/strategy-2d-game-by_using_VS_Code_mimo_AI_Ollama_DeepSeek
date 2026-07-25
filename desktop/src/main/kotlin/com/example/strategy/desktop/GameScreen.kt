@@ -423,22 +423,22 @@ class GameScreen(private val game: StrategyGame) : ScreenAdapter() {
             return b
         }
 
-        val buildFarmBtn = btn("Farm (10F 5W)", Actions.BUILD_FARM); buildButtons.add(buildFarmBtn)
-        val buildLumberBtn = btn("Lumber Mill (15W)", Actions.BUILD_LUMBER_MILL); buildButtons.add(buildLumberBtn)
-        val buildBarracksBtn = btn("Barracks (15W 10S 10G)", Actions.BUILD_BARRACKS); buildButtons.add(buildBarracksBtn)
-        val buildMineBtn = btn("Mine (5W 15S 5I)", Actions.BUILD_MINE); buildButtons.add(buildMineBtn)
+        val buildFarmBtn = btn(Locale.BUILD_FARM, Actions.BUILD_FARM); buildButtons.add(buildFarmBtn)
+        val buildLumberBtn = btn(Locale.BUILD_LUMBER, Actions.BUILD_LUMBER_MILL); buildButtons.add(buildLumberBtn)
+        val buildBarracksBtn = btn(Locale.BUILD_BARRACKS_COST, Actions.BUILD_BARRACKS); buildButtons.add(buildBarracksBtn)
+        val buildMineBtn = btn(Locale.BUILD_MINE_COST, Actions.BUILD_MINE); buildButtons.add(buildMineBtn)
 
         panel.add(buildFarmBtn).fillX()
         panel.add(buildLumberBtn).fillX()
         panel.add(buildBarracksBtn).fillX().row()
         panel.add(buildMineBtn).fillX()
-        panel.add(btn("Recruit (10F 5G)", Actions.RECRUIT)).fillX()
-        panel.add(btn("Infantry (5F 3G)", Actions.RECRUIT_INFANTRY)).fillX()
-        panel.add(btn("Cavalry (10F 8G 5W)", Actions.RECRUIT_CAVALRY)).fillX().row()
-        panel.add(btn("Siege (15W 10I 10G)", Actions.RECRUIT_SIEGE)).fillX()
-        panel.add(btn("Develop (10G)", Actions.DEVELOP)).fillX()
-        panel.add(btn("MOVE", Actions.MOVE)).fillX().row()
-        panel.add(btn("ATTACK", Actions.ATTACK)).fillX()
+        panel.add(btn(Locale.RECRUIT_COST, Actions.RECRUIT)).fillX()
+        panel.add(btn(Locale.RECRUIT_INFANTRY_COST, Actions.RECRUIT_INFANTRY)).fillX()
+        panel.add(btn(Locale.RECRUIT_CAVALRY_COST, Actions.RECRUIT_CAVALRY)).fillX().row()
+        panel.add(btn(Locale.RECRUIT_SIEGE_COST, Actions.RECRUIT_SIEGE)).fillX()
+        panel.add(btn(Locale.DEVELOP_COST, Actions.DEVELOP)).fillX()
+        panel.add(btn(Locale.MOVE_BTN, Actions.MOVE)).fillX().row()
+        panel.add(btn(Locale.ATTACK_BTN, Actions.ATTACK)).fillX()
 
         val endBtn = TextButton("END TURN", skin)
         endBtn.label.setFontScale(0.75f); endBtn.label.color = Color.GOLD
@@ -660,7 +660,7 @@ class GameScreen(private val game: StrategyGame) : ScreenAdapter() {
     private fun updateStatsLabel() {
         if (!showStats) { statsLabel.setText(""); return }
         val history = state.history
-        if (history.isEmpty()) { statsLabel.setText("No history yet"); return }
+            if (history.isEmpty()) { statsLabel.setText(Locale.NO_HISTORY); return }
         statsLabel.setText("--- Stats ---\n" + history.takeLast(5).joinToString("\n") { h ->
             "T${h.turn}: ${h.territories} terr, ${h.population} pop, F${h.resources.food} W${h.resources.wood} S${h.resources.stone} G${h.resources.gold}"
         })
@@ -678,8 +678,8 @@ class GameScreen(private val game: StrategyGame) : ScreenAdapter() {
             override fun clicked(event: InputEvent?, x: Float, y: Float) {
                 val name = nameField.text.trim()
                 if (name.isEmpty()) return
-                if (SaveManager.save(state, name)) { statusLabel.setText("Saved: $name"); statusLabel.color = Color.CYAN }
-                else { statusLabel.setText("Save FAILED!"); statusLabel.color = Color.RED }
+                if (SaveManager.save(state, name)) { statusLabel.setText(Locale.SAVED + name); statusLabel.color = Color.CYAN }
+                else { statusLabel.setText(Locale.SAVE_FAILED); statusLabel.color = Color.RED }
                 win.remove()
             }
         })
@@ -717,9 +717,9 @@ class GameScreen(private val game: StrategyGame) : ScreenAdapter() {
                         if (loaded != null) {
                             state = loaded; game.gameState = state; selectedRegion = null; selectedRegions.clear()
                             actionUsedThisTurn = false; attackMode = false; attackSourceId = -1; moveMode = false; moveSourceId = -1
-                            statusLabel.setText("Loaded: $saveName"); statusLabel.color = Color.CYAN
+                            statusLabel.setText(Locale.LOADED + saveName); statusLabel.color = Color.CYAN
                             updateInfoLabel(); w.remove()
-                        } else { statusLabel.setText("Load FAILED!"); statusLabel.color = Color.RED }
+                        } else { statusLabel.setText(Locale.LOAD_FAILED); statusLabel.color = Color.RED }
                     }
                 })
 
@@ -742,7 +742,7 @@ class GameScreen(private val game: StrategyGame) : ScreenAdapter() {
                                 SaveManager.deleteSave(saveName)
                                 confirm.remove()
                                 val remaining = SaveManager.listSaves()
-                                if (remaining.isEmpty()) { w.remove(); statusLabel.setText("All saves deleted"); statusLabel.color = Color.ORANGE }
+                                if (remaining.isEmpty()) { w.remove(); statusLabel.setText(Locale.ALL_SAVES_DELETED); statusLabel.color = Color.ORANGE }
                                 else rebuildList(remaining)
                             }
                         })
@@ -817,13 +817,13 @@ class GameScreen(private val game: StrategyGame) : ScreenAdapter() {
             if (actionType == Actions.ATTACK) {
                 if (region.ownerId != state.currentPlayerId) return
                 attackMode = true; attackSourceId = region.id
-                infoLabel.setText("ATTACK MODE: Click enemy region to attack from ${region.name}")
+                infoLabel.setText(Locale.ATTACK_MODE + " ${region.name}")
                 return
             }
             if (actionType == Actions.MOVE) {
                 if (region.ownerId != state.currentPlayerId) return
                 moveMode = true; moveSourceId = region.id
-                infoLabel.setText("MOVE MODE: Click your region to move troops from ${region.name}")
+                infoLabel.setText(Locale.MOVE_MODE + " ${region.name}")
                 return
             }
             val action = when (actionType) {
