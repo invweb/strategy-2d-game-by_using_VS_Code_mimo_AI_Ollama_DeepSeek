@@ -2,19 +2,18 @@ package com.example.strategy.ai
 
 import com.example.strategy.logic.ActionQueue
 import com.example.strategy.model.*
-import com.example.strategy.platform.HttpClient
 import com.example.strategy.platform.PlatformProvider
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
-// AI advisor — sends game state to Ollama and parses response into actions
 object OllamaAI {
 
-    private const val OLLAMA_URL = "http://localhost:11434/api/generate"
     private val json = Json { ignoreUnknownKeys = true }
 
     data class AIAction(
@@ -24,13 +23,21 @@ object OllamaAI {
     )
 
     fun decide(gameState: GameState): AIAction? {
-        val client = PlatformProvider.httpClient ?: return null
         val player = gameState.currentPlayer() ?: return null
         if (player.isHuman) return null
 
+        return when (AISettings.backend) {
+            AISettings.Backend.NONE -> fallbackAction(gameState, player)
+            AISettings.Backend.OLLAMA -> callOllama(gameState, player)
+            AISettings.Backend.LM_STUDIO -> callLmStudio(gameState, player)
+        }
+    }
+
+    private fun callOllama(gameState: GameState, player: Player): AIAction? {
+        val client = PlatformProvider.httpClient ?: return fallbackAction(gameState, player)
         val prompt = buildPrompt(gameState, player)
         val requestBody = buildJsonObject {
-            put("model", JsonPrimitive("deepseek-r1:7b"))
+            put("model", JsonPrimitive(AISettings.ollamaModel))
             put("prompt", JsonPrimitive(prompt))
             put("stream", JsonPrimitive(false))
             put("options", buildJsonObject {
@@ -40,14 +47,58 @@ object OllamaAI {
         }
 
         return try {
-            val response = client.postJson(OLLAMA_URL, requestBody.toString())
+            val response = client.postJson("${AISettings.ollamaUrl}/api/generate", requestBody.toString())
             if (response == null) {
-                println("[OllamaAI] No response from Ollama")
+                println("[AI] No response from Ollama")
                 return fallbackAction(gameState, player)
             }
-            parseResponse(response, gameState, player)
+            val responseText = try {
+                val obj = json.parseToJsonElement(response) as JsonObject
+                obj["response"]?.jsonPrimitive?.contentOrNull ?: ""
+            } catch (_: Exception) { response }
+
+            println("[Ollama] Response: $responseText")
+            parseAction(responseText, gameState, player)
         } catch (e: Exception) {
-            println("[OllamaAI] Error: ${e.message}")
+            println("[Ollama] Error: ${e.message}")
+            fallbackAction(gameState, player)
+        }
+    }
+
+    private fun callLmStudio(gameState: GameState, player: Player): AIAction? {
+        val client = PlatformProvider.httpClient ?: return fallbackAction(gameState, player)
+        val prompt = buildPrompt(gameState, player)
+        val model = AISettings.lmStudioModel.ifEmpty { "default" }
+
+        val requestBody = buildJsonObject {
+            put("model", JsonPrimitive(model))
+            put("messages", kotlinx.serialization.json.buildJsonArray {
+                add(buildJsonObject {
+                    put("role", JsonPrimitive("user"))
+                    put("content", JsonPrimitive(prompt))
+                })
+            })
+            put("temperature", JsonPrimitive(0.3))
+            put("max_tokens", JsonPrimitive(200))
+        }
+
+        return try {
+            val url = "${AISettings.lmStudioUrl}/v1/chat/completions"
+            val response = client.postJson(url, requestBody.toString())
+            if (response == null) {
+                println("[AI] No response from LM Studio")
+                return fallbackAction(gameState, player)
+            }
+            val responseText = try {
+                val obj = json.parseToJsonElement(response) as JsonObject
+                val choices = obj["choices"]?.jsonArray
+                choices?.firstOrNull()?.jsonObject?.get("message")?.jsonObject?.get("content")?.jsonPrimitive?.contentOrNull ?: ""
+            } catch (_: Exception) { response }
+
+            println("[LMStudio] Response: $responseText")
+            parseAction(responseText, gameState, player)
+        } catch (e: Exception) {
+            println("[LMStudio] Error: ${e.message}")
             fallbackAction(gameState, player)
         }
     }
@@ -105,16 +156,7 @@ Reply with ONLY one line in format: ACTION:TARGET_ID
 Example: BUILD_FARM:3"""
     }
 
-    private fun parseResponse(response: String, state: GameState, player: Player): AIAction? {
-        val responseText = try {
-            val obj = json.parseToJsonElement(response) as JsonObject
-            obj["response"]?.jsonPrimitive?.contentOrNull ?: ""
-        } catch (_: Exception) {
-            response
-        }
-
-        println("[OllamaAI] Response: $responseText")
-
+    private fun parseAction(responseText: String, state: GameState, player: Player): AIAction? {
         val lines = responseText.lines()
         for (line in lines) {
             val trimmed = line.trim().uppercase()
@@ -153,15 +195,11 @@ Example: BUILD_FARM:3"""
                 }
             }
         }
-
         return fallbackAction(state, player)
     }
 
-    // Simple fallback if Ollama fails or returns invalid response
     private fun fallbackAction(state: GameState, player: Player): AIAction? {
         val ownedRegions = state.map.regions.filter { it.ownerId == player.id }
-        val enemyRegions = state.map.regions.filter { it.ownerId != null && it.ownerId != player.id && it.terrain != TerrainType.WATER }
-
         val emptyRegions = ownedRegions.filter { it.buildings.isEmpty() && it.terrain != TerrainType.WATER }
         val barracksRegions = ownedRegions.filter { it.buildings.any { b -> b.type == BuildingType.BARRACKS } }
 
@@ -171,47 +209,33 @@ Example: BUILD_FARM:3"""
 
         if (hasEnemyNeighbor && barracksRegions.isEmpty() && player.resources.canAfford(Resources(wood = 15, stone = 10, gold = 10))) {
             val target = emptyRegions.firstOrNull() ?: ownedRegions.firstOrNull()
-            if (target != null) {
-                return AIAction(ActionQueue.ActionType.BUILD, target.id, "BARRACKS")
-            }
+            if (target != null) return AIAction(ActionQueue.ActionType.BUILD, target.id, "BARRACKS")
         }
 
         if (hasEnemyNeighbor && player.resources.canAfford(Resources(stone = 20, iron = 5))) {
             val wallRegion = ownedRegions.firstOrNull { r ->
                 r.buildings.any { it.type == BuildingType.BARRACKS } && !r.buildings.any { it.type == BuildingType.WALL }
             }
-            if (wallRegion != null) {
-                return AIAction(ActionQueue.ActionType.BUILD, wallRegion.id, "WALL")
-            }
+            if (wallRegion != null) return AIAction(ActionQueue.ActionType.BUILD, wallRegion.id, "WALL")
         }
 
         if (player.resources.canAfford(Resources(food = 10, wood = 5))) {
-            val target = emptyRegions.firstOrNull { it.terrain == TerrainType.PLAINS }
-                ?: emptyRegions.firstOrNull()
-            if (target != null) {
-                return AIAction(ActionQueue.ActionType.BUILD, target.id, "FARM")
-            }
+            val target = emptyRegions.firstOrNull { it.terrain == TerrainType.PLAINS } ?: emptyRegions.firstOrNull()
+            if (target != null) return AIAction(ActionQueue.ActionType.BUILD, target.id, "FARM")
         }
 
         if (player.resources.canAfford(Resources(wood = 5, stone = 15, iron = 5))) {
-            val target = emptyRegions.firstOrNull { it.terrain == TerrainType.MOUNTAIN }
-                ?: emptyRegions.firstOrNull()
-            if (target != null) {
-                return AIAction(ActionQueue.ActionType.BUILD, target.id, "MINE")
-            }
+            val target = emptyRegions.firstOrNull { it.terrain == TerrainType.MOUNTAIN } ?: emptyRegions.firstOrNull()
+            if (target != null) return AIAction(ActionQueue.ActionType.BUILD, target.id, "MINE")
         }
 
-        if (player.resources.canAfford(Resources(food = 10, gold = 5))) {
-            if (barracksRegions.isNotEmpty()) {
-                return AIAction(ActionQueue.ActionType.RECRUIT, barracksRegions.first().id)
-            }
+        if (player.resources.canAfford(Resources(food = 10, gold = 5)) && barracksRegions.isNotEmpty()) {
+            return AIAction(ActionQueue.ActionType.RECRUIT, barracksRegions.first().id)
         }
 
         if (player.resources.canAfford(Resources(gold = 10))) {
             val region = ownedRegions.maxByOrNull { it.population }
-            if (region != null) {
-                return AIAction(ActionQueue.ActionType.DEVELOP, region.id)
-            }
+            if (region != null) return AIAction(ActionQueue.ActionType.DEVELOP, region.id)
         }
 
         if (state.diplomacy.getRelation(player.id, 1).status == DiplomacyStatus.NEUTRAL) {
@@ -222,9 +246,7 @@ Example: BUILD_FARM:3"""
 
         if (state.diplomacy.isAllied(player.id, 1) && state.turn > 10) {
             val totalPop = ownedRegions.sumOf { it.population }
-            if (totalPop > 60) {
-                return AIAction(ActionQueue.ActionType.BREAK_ALLIANCE, 1)
-            }
+            if (totalPop > 60) return AIAction(ActionQueue.ActionType.BREAK_ALLIANCE, 1)
         }
 
         return null

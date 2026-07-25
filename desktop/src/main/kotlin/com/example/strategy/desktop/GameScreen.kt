@@ -608,11 +608,17 @@ class GameScreen(private val game: StrategyGame) : ScreenAdapter() {
             infoLabel.setText("${r.name} | ${r.terrain} | $owner\n${Locale.POPULATION}: ${r.population} (${Locale.ATTACK}: $attack, ${Locale.DEFENSE}: $defense)\n${Locale.UNITS}: $unitInfo\n${Locale.BUILDINGS}: $buildings")
         }
 
+        val aiInfo = when (com.example.strategy.ai.AISettings.backend) {
+            com.example.strategy.ai.AISettings.Backend.NONE -> "AI: Fallback"
+            com.example.strategy.ai.AISettings.Backend.OLLAMA -> "AI: Ollama (${com.example.strategy.ai.AISettings.ollamaModel})"
+            com.example.strategy.ai.AISettings.Backend.LM_STUDIO -> "AI: LM Studio (${com.example.strategy.ai.AISettings.lmStudioModel.ifEmpty { "default" }})"
+        }
         statusLabel.setText(
             "${Locale.TURN} ${state.turn} | ${player?.name ?: "?"}\n" +
             "${Locale.TERRITORIES}: ${Locale.YOURS} $myTerritories vs $enemyTerritories\n" +
             "${Locale.POPULATION}: ${Locale.YOURS} $myPop vs $enemyPop\n" +
             "${Locale.INCOME}: +${income.food}F +${income.wood}W +${income.stone}S +${income.gold}G | ${Locale.UPKEEP}: -${upkeep.food}F\n" +
+            "$aiInfo\n" +
             when {
                 actionUsedThisTurn -> Locale.ACTION_USED
                 isMyTurn -> Locale.YOUR_TURN

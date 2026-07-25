@@ -17,6 +17,7 @@ import com.badlogic.gdx.scenes.scene2d.ui.TextField
 import com.badlogic.gdx.scenes.scene2d.ui.Window
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener
 import com.badlogic.gdx.scenes.scene2d.utils.NinePatchDrawable
+import com.example.strategy.ai.AISettings
 import com.badlogic.gdx.utils.viewport.ScreenViewport
 
 class MenuScreen(private val game: StrategyGame) : ScreenAdapter() {
@@ -173,33 +174,32 @@ class MenuScreen(private val game: StrategyGame) : ScreenAdapter() {
     }
 
     private fun showSettingsDialog() {
+        AISettings.load()
         val win = Window(Locale.SETTINGS, skin)
         win.isModal = true; win.isMovable = true; win.pad(16f); win.defaults().pad(5f)
 
         val langTitle = Label(Locale.LANGUAGE, skin)
         langTitle.color = Color.CYAN
-        win.add(langTitle)
+        win.add(langTitle).colspan(2).row()
 
         val langs = Locale.Lang.entries
         var langIdx = langs.indexOf(Locale.get())
         val langLabel = Label(Locale.get().displayName, skin)
         langLabel.color = Color.WHITE
         val prevLangBtn = TextButton("<", skin)
+        val nextLangBtn = TextButton(">", skin)
         prevLangBtn.addListener(object : ClickListener() {
             override fun clicked(event: InputEvent?, x: Float, y: Float) {
                 langIdx = (langIdx - 1 + langs.size) % langs.size
                 Locale.set(langs[langIdx])
-                langLabel.setText(Locale.get().displayName)
                 win.remove()
                 game.setScreen(MenuScreen(game))
             }
         })
-        val nextLangBtn = TextButton(">", skin)
         nextLangBtn.addListener(object : ClickListener() {
             override fun clicked(event: InputEvent?, x: Float, y: Float) {
                 langIdx = (langIdx + 1) % langs.size
                 Locale.set(langs[langIdx])
-                langLabel.setText(Locale.get().displayName)
                 win.remove()
                 game.setScreen(MenuScreen(game))
             }
@@ -208,10 +208,70 @@ class MenuScreen(private val game: StrategyGame) : ScreenAdapter() {
         win.add(langLabel).width(120f)
         win.add(nextLangBtn).width(40f).row()
 
+        val aiTitle = Label(Locale.AI_BACKEND, skin)
+        aiTitle.color = Color.CYAN
+        win.add(aiTitle).colspan(4).padTop(15f).row()
+
+        val backends = AISettings.Backend.entries
+        var backendIdx = backends.indexOf(AISettings.backend)
+        val backendLabel = Label(AISettings.backend.displayName, skin)
+        backendLabel.color = Color.WHITE
+        val prevBackendBtn = TextButton("<", skin)
+        val nextBackendBtn = TextButton(">", skin)
+        prevBackendBtn.addListener(object : ClickListener() {
+            override fun clicked(event: InputEvent?, x: Float, y: Float) {
+                backendIdx = (backendIdx - 1 + backends.size) % backends.size
+                AISettings.setBackend(backends[backendIdx])
+                backendLabel.setText(AISettings.backend.displayName)
+            }
+        })
+        nextBackendBtn.addListener(object : ClickListener() {
+            override fun clicked(event: InputEvent?, x: Float, y: Float) {
+                backendIdx = (backendIdx + 1) % backends.size
+                AISettings.setBackend(backends[backendIdx])
+                backendLabel.setText(AISettings.backend.displayName)
+            }
+        })
+        win.add(prevBackendBtn).width(40f)
+        win.add(backendLabel).width(160f).colspan(2)
+        win.add(nextBackendBtn).width(40f).row()
+
+        val ollamaUrlLabel = Label(Locale.AI_OLLAMA_URL, skin)
+        ollamaUrlLabel.color = Color.LIGHT_GRAY
+        win.add(ollamaUrlLabel).colspan(4).row()
+        val ollamaUrlField = TextField(AISettings.ollamaUrl, skin)
+        win.add(ollamaUrlField).colspan(4).width(300f).padBottom(4f).row()
+
+        val ollamaModelLabel = Label(Locale.AI_OLLAMA_MODEL, skin)
+        ollamaModelLabel.color = Color.LIGHT_GRAY
+        win.add(ollamaModelLabel).colspan(4).row()
+        val ollamaModelField = TextField(AISettings.ollamaModel, skin)
+        win.add(ollamaModelField).colspan(4).width(300f).padBottom(4f).row()
+
+        val lmUrlLabel = Label(Locale.AI_LMSTUDIO_URL, skin)
+        lmUrlLabel.color = Color.LIGHT_GRAY
+        win.add(lmUrlLabel).colspan(4).row()
+        val lmUrlField = TextField(AISettings.lmStudioUrl, skin)
+        win.add(lmUrlField).colspan(4).width(300f).padBottom(4f).row()
+
+        val lmModelLabel = Label(Locale.AI_LMSTUDIO_MODEL, skin)
+        lmModelLabel.color = Color.LIGHT_GRAY
+        win.add(lmModelLabel).colspan(4).row()
+        val lmModelField = TextField(AISettings.lmStudioModel, skin)
+        win.add(lmModelField).colspan(4).width(300f).padBottom(4f).row()
+
         val closeBtn = TextButton(Locale.CLOSE, skin)
         closeBtn.label.setFontScale(0.9f)
-        closeBtn.addListener(object : ClickListener() { override fun clicked(event: InputEvent?, x: Float, y: Float) { win.remove() } })
-        win.add(closeBtn).width(120f).colspan(3).padTop(10f)
+        closeBtn.addListener(object : ClickListener() {
+            override fun clicked(event: InputEvent?, x: Float, y: Float) {
+                AISettings.setOllamaUrl(ollamaUrlField.text.trim())
+                AISettings.setOllamaModel(ollamaModelField.text.trim())
+                AISettings.setLmStudioUrl(lmUrlField.text.trim())
+                AISettings.setLmStudioModel(lmModelField.text.trim())
+                win.remove()
+            }
+        })
+        win.add(closeBtn).width(120f).colspan(4).padTop(15f)
 
         win.pack()
         win.setPosition(Gdx.graphics.width / 2f - win.width / 2f, Gdx.graphics.height / 2f - win.height / 2f)

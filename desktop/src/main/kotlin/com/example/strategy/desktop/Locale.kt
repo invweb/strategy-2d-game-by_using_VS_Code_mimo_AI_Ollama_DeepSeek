@@ -338,6 +338,36 @@ object Locale {
         Lang.EN -> "Also works with scroll wheel"
     }
 
+    val AI_BACKEND get() = when(current) {
+        Lang.RU -> "AI движок:"
+        Lang.DE -> "KI-Backend:"
+        Lang.EN -> "AI Backend:"
+    }
+
+    val AI_OLLAMA_URL get() = when(current) {
+        Lang.RU -> "URL Ollama:"
+        Lang.DE -> "Ollama URL:"
+        Lang.EN -> "Ollama URL:"
+    }
+
+    val AI_OLLAMA_MODEL get() = when(current) {
+        Lang.RU -> "Модель Ollama:"
+        Lang.DE -> "Ollama Modell:"
+        Lang.EN -> "Ollama Model:"
+    }
+
+    val AI_LMSTUDIO_URL get() = when(current) {
+        Lang.RU -> "URL LM Studio:"
+        Lang.DE -> "LM Studio URL:"
+        Lang.EN -> "LM Studio URL:"
+    }
+
+    val AI_LMSTUDIO_MODEL get() = when(current) {
+        Lang.RU -> "Модель LM Studio:"
+        Lang.DE -> "LM Studio Modell:"
+        Lang.EN -> "LM Studio Model:"
+    }
+
     // MapSize
     val SMALL get() = when(current) {
         Lang.RU -> "Маленький"; Lang.DE -> "Klein"; Lang.EN -> "Small"

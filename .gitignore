@@ -18,3 +18,5 @@ Thumbs.db
 
 # Save files
 savegame.json
+desktop/ai_prefs.txt
+desktop/saves/
