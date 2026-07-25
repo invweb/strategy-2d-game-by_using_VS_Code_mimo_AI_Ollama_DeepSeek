@@ -162,10 +162,16 @@ Language preference is saved automatically.
 ### How it works
 
 When you press **END TURN**:
-1. AI receives current game state (resources, territories, enemies)
-2. Sends prompt to Ollama (`deepseek-r1:7b`) in background thread
-3. Model analyzes the situation and picks one action
-4. Action is executed, turn returns to the player
+1. Your pending action (build/recruit/attack/move) is applied to the game state
+2. Turn switches to the AI player
+3. `TurnManager.startTurn()` applies income, upkeep, fog of war, and random events for the AI
+4. `OllamaAI.decide()` is called in a **background thread** (non-blocking):
+   - Formats a prompt with AI's resources, territories, enemy positions, diplomacy status
+   - Sends HTTP POST to Ollama (`deepseek-r1:7b`) with connect timeout 3s / read timeout 5s
+   - Model analyzes the situation and returns one action (e.g., `BUILD_FARM:3`, `RECRUIT:7`)
+5. The AI action is dispatched back to the GL thread via `Gdx.app.postRunnable`
+6. `applyAIAction()` executes the action, then `TurnManager.endTurn()` switches back to the player
+7. If the AI response takes too long or Ollama is unreachable, **fallback AI** runs immediately (rule-based, no HTTP needed)
 
 ### Fallback (No Ollama Required)
 
