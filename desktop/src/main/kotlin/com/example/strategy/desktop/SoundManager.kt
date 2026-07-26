@@ -4,6 +4,7 @@ import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.audio.Sound
 import com.badlogic.gdx.utils.Disposable
 import kotlin.math.sin
+import kotlin.math.abs
 
 class SoundManager : Disposable {
 
@@ -17,7 +18,10 @@ class SoundManager : Disposable {
         END_TURN,
         RESEARCH,
         ALLIANCE,
-        ERROR
+        ERROR,
+        MOVE,
+        VICTORY,
+        DEFEAT
     }
 
     init {
@@ -25,37 +29,139 @@ class SoundManager : Disposable {
     }
 
     private fun generateAllSounds() {
-        sounds[SoundType.BUILD] = generateBeep(440f, 0.15f)
-        sounds[SoundType.RECRUIT] = generateBeep(523f, 0.1f)
-        sounds[SoundType.ATTACK] = generateNoise(0.2f)
-        sounds[SoundType.SELECT] = generateBeep(660f, 0.05f)
-        sounds[SoundType.END_TURN] = generateBeep(330f, 0.2f)
-        sounds[SoundType.RESEARCH] = generateBeep(880f, 0.15f)
-        sounds[SoundType.ALLIANCE] = generateBeep(550f, 0.2f)
-        sounds[SoundType.ERROR] = generateBeep(200f, 0.1f)
+        sounds[SoundType.BUILD] = generateChord(floatArrayOf(330f, 415f, 495f), 0.15f)
+        sounds[SoundType.RECRUIT] = generateArpeggio(floatArrayOf(440f, 554f, 659f), 0.12f)
+        sounds[SoundType.ATTACK] = generateImpact(0.25f)
+        sounds[SoundType.SELECT] = generateBeep(880f, 0.04f, waveform = Waveform.SINE)
+        sounds[SoundType.END_TURN] = generateChord(floatArrayOf(262f, 330f, 392f), 0.25f)
+        sounds[SoundType.RESEARCH] = generateArpeggio(floatArrayOf(523f, 659f, 784f, 1047f), 0.18f)
+        sounds[SoundType.ALLIANCE] = generateChord(floatArrayOf(440f, 554f, 659f, 880f), 0.3f)
+        sounds[SoundType.ERROR] = generateBeep(180f, 0.15f, waveform = Waveform.SQUARE)
+        sounds[SoundType.MOVE] = generateSweep(300f, 600f, 0.1f)
+        sounds[SoundType.VICTORY] = generateFanfare(0.5f)
+        sounds[SoundType.DEFEAT] = generateDescend(0.4f)
     }
 
-    private fun generateBeep(freq: Float, duration: Float): Sound {
+    private enum class Waveform { SINE, SQUARE, SAWTOOTH }
+
+    private fun generateBeep(freq: Float, duration: Float, waveform: Waveform = Waveform.SINE): Sound {
         val sampleRate = 22050
         val samples = (sampleRate * duration).toInt()
         val data = ShortArray(samples)
         for (i in 0 until samples) {
             val t = i.toFloat() / sampleRate
-            val envelope = 1f - (i.toFloat() / samples)
-            val value = (sin(2.0 * Math.PI * freq * t) * 8000 * envelope).toInt().toShort()
-            data[i] = value
+            val envelope = (1f - (i.toFloat() / samples)).let { it * it }
+            val raw = when (waveform) {
+                Waveform.SINE -> sin(2.0 * Math.PI * freq * t)
+                Waveform.SQUARE -> if (sin(2.0 * Math.PI * freq * t) > 0) 1.0 else -1.0
+                Waveform.SAWTOOTH -> 2.0 * (freq * t % 1.0) - 1.0
+            }
+            data[i] = (raw * 6000 * envelope).toInt().toShort()
         }
         return createSoundFromSamples(data, sampleRate)
     }
 
-    private fun generateNoise(duration: Float): Sound {
+    private fun generateChord(freqs: FloatArray, duration: Float): Sound {
         val sampleRate = 22050
         val samples = (sampleRate * duration).toInt()
         val data = ShortArray(samples)
         for (i in 0 until samples) {
-            val envelope = 1f - (i.toFloat() / samples)
-            val value = (Math.random() * 6000 * envelope - 3000 * envelope).toInt().toShort()
-            data[i] = value
+            val t = i.toFloat() / sampleRate
+            val fadeOut = (1f - (i.toFloat() / samples)).let { it * it }
+            val fadeIn = (i.toFloat() / (samples * 0.1f)).coerceIn(0f, 1f)
+            val envelope = fadeIn * fadeOut
+            var value = 0.0
+            for (freq in freqs) {
+                value += sin(2.0 * Math.PI * freq * t)
+            }
+            value /= freqs.size
+            data[i] = (value * 5000 * envelope).toInt().toShort()
+        }
+        return createSoundFromSamples(data, sampleRate)
+    }
+
+    private fun generateArpeggio(freqs: FloatArray, totalDuration: Float): Sound {
+        val sampleRate = 22050
+        val samples = (sampleRate * totalDuration).toInt()
+        val data = ShortArray(samples)
+        val noteDuration = samples / freqs.size
+        for (i in 0 until samples) {
+            val noteIndex = (i / noteDuration).coerceIn(0, freqs.size - 1)
+            val t = i.toFloat() / sampleRate
+            val notePos = i % noteDuration
+            val envelope = (1f - (notePos.toFloat() / noteDuration)).let { it * it }
+            val value = sin(2.0 * Math.PI * freqs[noteIndex] * t)
+            data[i] = (value * 5500 * envelope).toInt().toShort()
+        }
+        return createSoundFromSamples(data, sampleRate)
+    }
+
+    private fun generateSweep(startFreq: Float, endFreq: Float, duration: Float): Sound {
+        val sampleRate = 22050
+        val samples = (sampleRate * duration).toInt()
+        val data = ShortArray(samples)
+        for (i in 0 until samples) {
+            val t = i.toFloat() / sampleRate
+            val progress = i.toFloat() / samples
+            val freq = startFreq + (endFreq - startFreq) * progress
+            val envelope = 1f - progress * progress
+            val value = sin(2.0 * Math.PI * freq * t)
+            data[i] = (value * 5000 * envelope).toInt().toShort()
+        }
+        return createSoundFromSamples(data, sampleRate)
+    }
+
+    private fun generateImpact(duration: Float): Sound {
+        val sampleRate = 22050
+        val samples = (sampleRate * duration).toInt()
+        val data = ShortArray(samples)
+        for (i in 0 until samples) {
+            val t = i.toFloat() / sampleRate
+            val envelope = kotlin.math.exp(-8.0 * t)
+            val noise = Math.random() * 2 - 1
+            val tone = sin(2.0 * Math.PI * 120.0 * t)
+            val value = noise * 0.6 + tone * 0.4
+            data[i] = (value * 7000 * envelope).toInt().toShort()
+        }
+        return createSoundFromSamples(data, sampleRate)
+    }
+
+    private fun generateFanfare(duration: Float): Sound {
+        val sampleRate = 22050
+        val samples = (sampleRate * duration).toInt()
+        val data = ShortArray(samples)
+        val notes = floatArrayOf(523f, 659f, 784f, 1047f, 784f, 1047f)
+        val noteDuration = samples / notes.size
+        for (i in 0 until samples) {
+            val noteIndex = (i / noteDuration).coerceIn(0, notes.size - 1)
+            val t = i.toFloat() / sampleRate
+            val notePos = i % noteDuration
+            val envelope = if (noteIndex == notes.size - 1) {
+                (1f - (notePos.toFloat() / noteDuration)).let { it * it }
+            } else {
+                val attack = (notePos.toFloat() / (noteDuration * 0.1f)).coerceIn(0f, 1f)
+                val release = (1f - (notePos.toFloat() / noteDuration)).let { it * it }
+                attack * release
+            }
+            val value = sin(2.0 * Math.PI * notes[noteIndex] * t) * 0.7 +
+                        sin(2.0 * Math.PI * notes[noteIndex] * 2 * t) * 0.3
+            data[i] = (value * 5000 * envelope).toInt().toShort()
+        }
+        return createSoundFromSamples(data, sampleRate)
+    }
+
+    private fun generateDescend(duration: Float): Sound {
+        val sampleRate = 22050
+        val samples = (sampleRate * duration).toInt()
+        val data = ShortArray(samples)
+        for (i in 0 until samples) {
+            val t = i.toFloat() / sampleRate
+            val progress = i.toFloat() / samples
+            val freq = 600f - 400f * progress
+            val envelope = 1f - progress
+            val value = sin(2.0 * Math.PI * freq * t) * 0.7 +
+                        sin(2.0 * Math.PI * freq * 0.5 * t) * 0.3
+            data[i] = (value * 5000 * envelope * envelope).toInt().toShort()
         }
         return createSoundFromSamples(data, sampleRate)
     }

@@ -37,11 +37,33 @@ object SaveManager {
                 return null
             }
             val data = file.readText()
-            json.decodeFromString(GameState.serializer(), data)
+            if (data.isBlank()) {
+                println("[SaveManager] Save file is empty: $name")
+                return null
+            }
+            val state = json.decodeFromString(GameState.serializer(), data)
+            if (!validate(state)) {
+                println("[SaveManager] Save file validation failed: $name")
+                return null
+            }
+            state
         } catch (e: Exception) {
             println("[SaveManager] Load failed: ${e.message}")
             null
         }
+    }
+
+    private fun validate(state: GameState): Boolean {
+        if (state.turn < 1) return false
+        if (state.players.isEmpty()) return false
+        if (state.map.regions.isEmpty()) return false
+        if (state.currentPlayerId !in state.players.map { it.id }) return false
+        for (region in state.map.regions) {
+            if (region.id < 0) return false
+            if (region.terrain == com.example.strategy.model.TerrainType.WATER && region.population > 0) return false
+            if (region.ownerId != null && region.ownerId !in state.players.map { it.id }) return false
+        }
+        return true
     }
 
     fun listSaves(): List<String> {

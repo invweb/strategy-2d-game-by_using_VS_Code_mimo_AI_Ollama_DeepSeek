@@ -83,4 +83,31 @@ object AStar {
         }
         return path
     }
+
+    fun findReachableRegions(gameMap: GameMap, startId: Int, maxCost: Int = 8): Set<Region> {
+        val start = gameMap.getRegionById(startId) ?: return emptySet()
+        val reachable = mutableSetOf<Region>()
+        data class BFSNode(val region: Region, val cost: Int)
+        val queue = ArrayDeque<BFSNode>()
+        val visited = mutableMapOf<Int, Int>()
+        queue.add(BFSNode(start, 0))
+        visited[start.id] = 0
+
+        while (queue.isNotEmpty()) {
+            val current = queue.removeFirst()
+            reachable.add(current.region)
+
+            for (neighbor in gameMap.getNeighbors(current.region)) {
+                val moveCost = terrainCost(neighbor.terrain)
+                if (moveCost == Int.MAX_VALUE) continue
+                val newCost = current.cost + moveCost
+                if (newCost > maxCost) continue
+                val prevCost = visited[neighbor.id]
+                if (prevCost != null && prevCost <= newCost) continue
+                visited[neighbor.id] = newCost
+                queue.add(BFSNode(neighbor, newCost))
+            }
+        }
+        return reachable
+    }
 }

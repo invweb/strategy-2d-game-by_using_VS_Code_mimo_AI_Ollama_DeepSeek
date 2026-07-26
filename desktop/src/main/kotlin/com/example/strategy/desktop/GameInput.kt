@@ -50,6 +50,8 @@ class GameInput(
         private set
     private val minZoom = 0.3f
     private val maxZoom = 3.0f
+    var reachableRegions = setOf<com.example.strategy.model.Region>()
+        private set
 
     val mapInput = object : InputAdapter() {
         override fun touchDown(screenX: Int, screenY: Int, pointer: Int, button: Int): Boolean {
@@ -92,11 +94,12 @@ class GameInput(
                     return true
                 }
 
-                if (moveModeProvider() && region != null && region.ownerId == stateProvider().currentPlayerId && region.id != moveSourceIdProvider() && region.terrain != TerrainType.WATER) {
+                if (moveModeProvider() && region != null && region.ownerId == stateProvider().currentPlayerId && region.id != moveSourceIdProvider() && region.terrain != TerrainType.WATER && reachableRegions.contains(region)) {
+                    soundPlayer(SoundManager.SoundType.MOVE)
                     val action = ActionQueue.GameAction(stateProvider().currentPlayerId, ActionQueue.ActionType.MOVE_TROOPS, moveSourceIdProvider(), region.id.toString())
                     ActionQueue.DEFAULT.enqueue(action)
                     stateSetter(ActionQueue.DEFAULT.processAll(stateProvider()))
-                    moveModeSetter(false); moveSourceIdSetter(-1)
+                    moveModeSetter(false); moveSourceIdSetter(-1); clearReachable()
                     actionUsedThisTurnSetter(true)
                     selectedRegionSetter(stateProvider().map.getRegionById(region.id))
                     updateInfoLabel()
@@ -171,6 +174,14 @@ class GameInput(
 
     fun cancelPanning() {
         isPanning = false
+    }
+
+    fun calculateReachable(sourceId: Int) {
+        reachableRegions = com.example.strategy.pathfinding.AStar.findReachableRegions(stateProvider().map, sourceId)
+    }
+
+    fun clearReachable() {
+        reachableRegions = emptySet()
     }
 
     private fun selectRegionsInBox() {

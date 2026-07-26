@@ -8,6 +8,7 @@ import kotlin.random.Random
 object GameFactory {
 
     private val terrainSeed = Random.nextLong()
+    private val perlin = PerlinNoise(terrainSeed)
 
     enum class MapSize(val w: Int, val h: Int) {
         SMALL(8, 6),
@@ -86,11 +87,11 @@ object GameFactory {
     }
 
     private fun generateTerrain(x: Int, y: Int, style: TerrainStyle, w: Int, h: Int): TerrainType {
-        val perlin = PerlinNoise(terrainSeed)
-        val nx = x.toDouble() / w
-        val ny = y.toDouble() / h
-        val elevation = perlin.octaveNoise(nx * 4, ny * 4, 4, 0.5)
-        val moisture = perlin.octaveNoise(nx * 3 + 100, ny * 3 + 100, 3, 0.5)
+        val freq = 6.0 / minOf(w, h)
+        val nx = x.toDouble() * freq
+        val ny = y.toDouble() * freq
+        val elevation = perlin.octaveNoise(nx, ny, 4, 0.5)
+        val moisture = perlin.octaveNoise(nx + 50, ny + 50, 3, 0.5)
 
         val e = (elevation + 1) / 2.0
         val m = (moisture + 1) / 2.0

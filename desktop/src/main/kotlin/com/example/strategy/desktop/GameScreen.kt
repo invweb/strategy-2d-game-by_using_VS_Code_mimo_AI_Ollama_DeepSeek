@@ -28,7 +28,7 @@ class GameScreen(private val game: StrategyGame) : ScreenAdapter() {
     private var selectedRegion: Region? = null
     private val selectedRegions = mutableListOf<Region>()
     private var state = game.gameState
-    private var stateBeforeAction: GameState? = null
+    private val undoStack = mutableListOf<GameState>()
     private var actionUsedThisTurn = false
     private var attackMode = false
     private var attackSourceId = -1
@@ -127,6 +127,7 @@ class GameScreen(private val game: StrategyGame) : ScreenAdapter() {
         actionUsedThisTurn = false
         attackMode = false; attackSourceId = -1
         moveMode = false; moveSourceId = -1
+        gameInput.clearReachable()
         gameUI.updateInfoLabel()
     }
 
@@ -136,6 +137,7 @@ class GameScreen(private val game: StrategyGame) : ScreenAdapter() {
                 state = TurnManager.endTurn(state)
                 game.gameState = state; selectedRegion = null; selectedRegions.clear(); actionUsedThisTurn = false
                 attackMode = false; attackSourceId = -1; moveMode = false; moveSourceId = -1
+                undoStack.clear(); gameInput.clearReachable()
                 soundManager?.play(SoundManager.SoundType.END_TURN)
                 runAITurns(); gameUI.updateInfoLabel()
                 return
@@ -160,6 +162,7 @@ class GameScreen(private val game: StrategyGame) : ScreenAdapter() {
             if (actionType == Actions.MOVE) {
                 if (region.ownerId != state.currentPlayerId) return
                 moveMode = true; moveSourceId = region.id
+                gameInput.calculateReachable(region.id)
                 gameUI.infoLabel.setText("${Locale.MOVE_MODE} ${region.name}")
                 return
             }
@@ -175,7 +178,7 @@ class GameScreen(private val game: StrategyGame) : ScreenAdapter() {
                 Actions.DEVELOP -> ActionQueue.GameAction(state.currentPlayerId, ActionQueue.ActionType.DEVELOP, region.id)
                 else -> return
             }
-            stateBeforeAction = state
+            undoStack.add(state)
             ActionQueue.DEFAULT.enqueue(action); state = ActionQueue.DEFAULT.processAll(state)
             game.gameState = state; selectedRegion = state.map.getRegionById(region.id); actionUsedThisTurn = true
             gameUI.updateInfoLabel()
@@ -205,21 +208,23 @@ class GameScreen(private val game: StrategyGame) : ScreenAdapter() {
         val enemyTerritories = state.map.regions.count { it.ownerId == 1 && it.terrain != TerrainType.WATER }
         if (enemyTerritories == 0 && myTerritories > 0) {
             gameOver = true
+            soundManager?.play(SoundManager.SoundType.VICTORY)
             gameUI.showGameOverDialog(Locale.VICTORY)
         } else if (myTerritories == 0 && enemyTerritories > 0) {
             gameOver = true
+            soundManager?.play(SoundManager.SoundType.DEFEAT)
             gameUI.showGameOverDialog(Locale.DEFEAT)
         }
     }
 
     private fun undoAction() {
-        if (stateBeforeAction == null || !actionUsedThisTurn) return
-        state = stateBeforeAction!!
+        if (undoStack.isEmpty() || !actionUsedThisTurn) return
+        state = undoStack.removeLast()
         game.gameState = state
         selectedRegion = null; selectedRegions.clear()
         actionUsedThisTurn = false
         attackMode = false; attackSourceId = -1; moveMode = false; moveSourceId = -1
-        stateBeforeAction = null
+        gameInput.clearReachable()
         gameUI.updateInfoLabel()
     }
 
@@ -264,7 +269,7 @@ class GameScreen(private val game: StrategyGame) : ScreenAdapter() {
             gameUI.update(delta)
             gameUI.updateTutorial(delta)
 
-            mapRenderer.drawTiles(state, animTime, actionUsedThisTurn, selectedRegions)
+            mapRenderer.drawTiles(state, animTime, actionUsedThisTurn, selectedRegions, gameInput.reachableRegions)
             mapRenderer.drawSelectionBox(gameInput.isBoxSelecting, gameInput.boxStartScreenX, gameInput.boxStartScreenY)
 
             animManager.update(delta)
