@@ -14,6 +14,11 @@ object Locale {
 
     fun get(): Lang = current
 
+    fun resetToDefault() {
+        current = Lang.EN
+        save()
+    }
+
     private val prefsFile: File
         get() = File(System.getProperty("user.home"), ".strategy_prefs")
 
@@ -23,8 +28,12 @@ object Locale {
             if (f.exists()) {
                 val langName = f.readText().trim()
                 current = Lang.entries.find { it.name == langName } ?: Lang.EN
+            } else {
+                current = Lang.EN
             }
-        } catch (_: Exception) {}
+        } catch (_: Exception) {
+            current = Lang.EN
+        }
     }
 
     private fun save() {
