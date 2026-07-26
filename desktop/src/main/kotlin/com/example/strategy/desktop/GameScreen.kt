@@ -253,7 +253,7 @@ class GameScreen(private val game: StrategyGame) : ScreenAdapter() {
             gameUI.updateTutorial(delta)
             gameUI.updateEvent(delta)
 
-            mapRenderer.drawTiles(holder.state, animTime, holder.actionUsedThisTurn, holder.selectedRegions, gameInput.reachableRegions)
+            mapRenderer.drawTiles(holder.state, animTime, holder.actionUsedThisTurn, holder.selectedRegions, gameInput.reachableRegions, camera)
             mapRenderer.drawSelectionBox(gameInput.isBoxSelecting, gameInput.boxStartScreenX, gameInput.boxStartScreenY)
 
             animManager.update(delta)
@@ -267,7 +267,7 @@ class GameScreen(private val game: StrategyGame) : ScreenAdapter() {
             game.batch.begin()
             miniMap.render(game.batch, holder.state, Gdx.graphics.width, Gdx.graphics.height)
             val player = holder.state.currentPlayer()
-            val resText = "Food: ${player?.resources?.food ?: 0}   Wood: ${player?.resources?.wood ?: 0}   Stone: ${player?.resources?.stone ?: 0}   Gold: ${player?.resources?.gold ?: 0}   Iron: ${player?.resources?.iron ?: 0}"
+            val resText = "${Locale.RES_FOOD}: ${player?.resources?.food ?: 0}   ${Locale.RES_WOOD}: ${player?.resources?.wood ?: 0}   ${Locale.RES_STONE}: ${player?.resources?.stone ?: 0}   ${Locale.RES_GOLD}: ${player?.resources?.gold ?: 0}   ${Locale.RES_IRON}: ${player?.resources?.iron ?: 0}"
             val resLayout = GlyphLayout(game.font, resText)
             game.font.color = Color.WHITE
             game.font.draw(game.batch, resText, Gdx.graphics.width - resLayout.width - 12f, Gdx.graphics.height - 12f)

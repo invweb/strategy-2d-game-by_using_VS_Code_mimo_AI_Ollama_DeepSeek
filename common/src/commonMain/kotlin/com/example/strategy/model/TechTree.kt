@@ -18,7 +18,8 @@ data class Technology(
     val name: String,
     val cost: Resources,
     val description: String,
-    val prerequisites: List<TechType> = emptyList()
+    val prerequisites: List<TechType> = emptyList(),
+    val turnsRequired: Int = 2
 )
 
 @Serializable
@@ -33,6 +34,21 @@ data class TechState(
         if (researching != null) return false
         val tech = TECH_TREE.find { it.type == type } ?: return false
         return tech.prerequisites.all { it in researched }
+    }
+
+    fun tickResearch(): TechState {
+        if (researching == null || turnsLeft <= 0) return this
+        val newTurnsLeft = turnsLeft - 1
+        return if (newTurnsLeft <= 0) {
+            copy(researched = researched + researching, researching = null, turnsLeft = 0)
+        } else {
+            copy(turnsLeft = newTurnsLeft)
+        }
+    }
+
+    fun startResearch(type: TechType): TechState {
+        val tech = TECH_TREE.find { it.type == type } ?: return this
+        return copy(researching = type, turnsLeft = tech.turnsRequired)
     }
 }
 

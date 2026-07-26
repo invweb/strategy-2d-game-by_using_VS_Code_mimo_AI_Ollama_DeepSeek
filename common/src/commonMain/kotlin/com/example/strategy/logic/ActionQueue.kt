@@ -3,6 +3,19 @@ package com.example.strategy.logic
 import com.example.strategy.model.GameState
 import com.example.strategy.model.UnitType
 
+/**
+ * Thread-safe action queue for processing game actions.
+ *
+ * Players enqueue actions via [enqueue], then [processAll] applies them
+ * to the game state. Each instance is independent — use [DEFAULT] for
+ * the main game, or create isolated instances for testing/multiplayer.
+ *
+ * Usage:
+ * ```
+ * ActionQueue.DEFAULT.enqueue(GameAction(playerId, ActionType.BUILD, regionId, "FARM"))
+ * state = ActionQueue.DEFAULT.processAll(state)
+ * ```
+ */
 class ActionQueue {
 
     data class GameAction(

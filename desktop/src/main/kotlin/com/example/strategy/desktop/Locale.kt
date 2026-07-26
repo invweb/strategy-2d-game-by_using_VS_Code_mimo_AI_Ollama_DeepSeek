@@ -589,4 +589,29 @@ object Locale {
     val OPPONENT_DISCONNECTED get() = when(current) {
         Lang.RU -> "Противник отключился!"; Lang.DE -> "Gegner getrennt!"; Lang.EN -> "Opponent disconnected!"
     }
+
+    val RES_FOOD get() = when(current) {
+        Lang.RU -> "Еда"; Lang.DE -> "Nahrung"; Lang.EN -> "Food"
+    }
+    val RES_WOOD get() = when(current) {
+        Lang.RU -> "Дерево"; Lang.DE -> "Holz"; Lang.EN -> "Wood"
+    }
+    val RES_STONE get() = when(current) {
+        Lang.RU -> "Камень"; Lang.DE -> "Stein"; Lang.EN -> "Stone"
+    }
+    val RES_GOLD get() = when(current) {
+        Lang.RU -> "Золото"; Lang.DE -> "Gold"; Lang.EN -> "Gold"
+    }
+    val RES_IRON get() = when(current) {
+        Lang.RU -> "Железо"; Lang.DE -> "Eisen"; Lang.EN -> "Iron"
+    }
+
+    val HELP_TITLE get() = when(current) {
+        Lang.RU -> "Как играть"; Lang.DE -> "Spielanleitung"; Lang.EN -> "How to Play"
+    }
+    val HELP_TEXT get() = when(current) {
+        Lang.RU -> "1. Выберите регион кликом\n2. Постройте здание (Ферма, Лесопилка, Казарма, Шахта)\n3. Вербуйте юнитов (Пехота, Кавалерия, Осада)\n4. Атакуйте вражеские территории\n5. Перемещайте юниты между своими регионами\n6. Исследуйте технологии\n7. Улучшайте здания (до уровня 3)\n8. Установите союз или торговлю\n9. Захватите все территории для победы!\n\nУправление:\n• ЛКМ — выбор региона\n• ПКМ + перетаскивание — перемещение камеры\n• Колёсико мыши — масштаб\n• Выделение框 — ЛКМ + перетаскивание"
+        Lang.DE -> "1. Klicken Sie auf eine Region\n2. Bauen Sie ein Gebäude (Farm, Sägewerk, Kaserne, Mine)\n3. Rekrutieren Sie Einheiten (Infanterie, Kavallerie, Belagerung)\n4. Greifen Sie feindliche Gebiete an\n5. Bewegen Sie Einheiten zwischen Ihren Regionen\n6. Erforschen Sie Technologien\n7. Verbessern Sie Gebäude (bis Stufe 3)\n8. Schließen Sie ein Bündnis oder Handel\n9. Erobern Sie alle Gebiete zum Sieg!\n\nSteuerung:\n• Linke Maustaste — Region wählen\n• Rechte Maustaste + Ziehen — Kamera bewegen\n• Mausrad — Zoom\n• Auswahlbox — Linke Maustaste + Ziehen"
+        Lang.EN -> "1. Click a region to select it\n2. Build a building (Farm, Lumber Mill, Barracks, Mine)\n3. Recruit units (Infantry, Cavalry, Siege)\n4. Attack enemy territories\n5. Move units between your regions\n6. Research technologies\n7. Upgrade buildings (up to level 3)\n8. Form alliance or trade\n9. Capture all territories to win!\n\nControls:\n• Left-click — select region\n• Right-click + drag — pan camera\n• Scroll wheel — zoom\n• Box select — left-click + drag"
+    }
 }

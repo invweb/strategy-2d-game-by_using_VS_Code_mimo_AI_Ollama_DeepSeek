@@ -2,7 +2,22 @@ package com.example.strategy.logic
 
 import com.example.strategy.model.*
 
-// Business rules — build, recruit, attack, move, develop
+/**
+ * Core game rules engine. Processes player actions and applies game logic.
+ *
+ * All methods are pure functions: they take a [GameState] and return a new [GameState]
+ * with the action applied. No side effects.
+ *
+ * Action types:
+ * - [processBuild] — construct a building in a region
+ * - [processRecruit] — recruit a unit (requires Barracks)
+ * - [processRecruitUnit] — recruit a specific unit type (Infantry/Cavalry/Siege)
+ * - [processAttack] — attack an enemy region
+ * - [processMove] — move troops between owned regions
+ * - [processDevelop] — increase population (costs gold)
+ * - [processResearch] — start researching a technology (multi-turn)
+ * - [processUpgradeBuilding] — upgrade a building (max level 3)
+ */
 object GameRules {
 
     private val BUILD_COSTS = mapOf(
@@ -216,12 +231,12 @@ object GameRules {
 
         val updatedPlayer = player.copy(
             resources = player.resources - tech.cost,
-            techs = TechState(researched = player.techs.researched + techType)
+            techs = player.techs.startResearch(techType)
         )
 
         return gameState.copy(
             players = gameState.players.map { if (it.id == player.id) updatedPlayer else it },
-            actionsLog = gameState.actionsLog + "${player.name} researched ${tech.name}"
+            actionsLog = gameState.actionsLog + "${player.name} started researching ${tech.name} (${tech.turnsRequired} turns)"
         )
     }
 

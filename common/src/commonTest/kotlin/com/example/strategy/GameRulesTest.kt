@@ -220,7 +220,9 @@ class GameRulesTest {
         )
         val newState = GameRules.processResearch(state, action)
         val player = newState.players.find { it.id == 1 }!!
-        assertTrue(player.techs.isResearched(TechType.AGRICULTURE))
+        assertFalse(player.techs.isResearched(TechType.AGRICULTURE))
+        assertEquals(TechType.AGRICULTURE, player.techs.researching)
+        assertTrue(player.techs.turnsLeft > 0)
     }
 
     @Test

@@ -4,9 +4,16 @@ import com.example.strategy.model.GameState
 import com.example.strategy.model.Resources
 import com.example.strategy.model.TurnSnapshot
 
-// Turn manager — orchestrates turn flow
+/**
+ * Orchestrates turn flow in the game.
+ *
+ * [startTurn] — applies income, upkeep, fog of war, tech research ticks, and random events.
+ * [endTurn] — processes pending actions and switches to the next player.
+ * [advanceFullTurn] — runs a complete turn cycle for all players (used in testing).
+ */
 object TurnManager {
 
+    /** Result of starting a turn, includes the updated state and any random event that occurred. */
     data class TurnResult(val state: GameState, val event: RandomEvents.Event? = null)
 
     fun startTurn(gameState: GameState): TurnResult {
@@ -16,7 +23,10 @@ object TurnManager {
         val upkeep = Economy.upkeepCost(player, updated.map)
         val afterUpkeep = updated.copy(
             players = updated.players.map {
-                if (it.id == player.id) it.copy(resources = it.resources - upkeep) else it
+                if (it.id == player.id) it.copy(
+                    resources = it.resources - upkeep,
+                    techs = it.techs.tickResearch()
+                ) else it
             }
         )
         val explored = afterUpkeep.fog.exploreAllOwned(player.id, afterUpkeep.map)

@@ -17,6 +17,28 @@ import com.example.strategy.model.*
 import com.example.strategy.logic.ActionQueue
 import com.example.strategy.logic.Economy
 
+/**
+ * Game UI construction and management.
+ *
+ * Builds all in-game UI panels (action buttons, diplomacy, tech tree, zoom controls)
+ * and manages dialogs (save, load, help, upgrade, game over, event notifications).
+ *
+ * Shared between [GameScreen] and [NetworkGameScreen] to avoid code duplication.
+ *
+ * @param stage libGDX stage for UI actors
+ * @param skin UI skin for styling
+ * @param stateProvider Returns current game state
+ * @param selectedRegionProvider Returns currently selected region
+ * @param selectedRegionsProvider Returns multiple selected regions (box selection)
+ * @param actionUsedThisTurnProvider Whether player used action this turn
+ * @param actionHandler Callback for action button clicks
+ * @param undoHandler Callback for undo button
+ * @param menuHandler Callback for menu/back button
+ * @param camera Camera for zoom controls
+ * @param soundPlayer Callback for playing sounds
+ * @param stateSetter Callback to update game state
+ * @param resetMode Callback to reset attack/move modes
+ */
 class GameUI(
     private val stage: Stage,
     private val skin: Skin,
@@ -220,6 +242,13 @@ class GameUI(
         zoomPanel.add(zoomInBtn).width(50f)
         zoomPanel.add(zoomOutBtn).width(50f)
 
+        val helpBtn = TextButton("?", zoomBtnStyle)
+        helpBtn.label.setFontScale(1.0f)
+        helpBtn.addListener(object : ClickListener() {
+            override fun clicked(event: InputEvent?, x: Float, y: Float) { showHelpDialog() }
+        })
+        zoomPanel.add(helpBtn).width(40f)
+
         root.add().expandY()
         root.add(diploPanel).right().top().pad(10f).padTop(40f).row()
         root.add(zoomPanel).left().bottom().pad(10f)
@@ -301,14 +330,21 @@ class GameUI(
 
         val dimmed = actionUsedThisTurn || !isMyTurn
         for (b in actionButtons) b.color.a = if (dimmed) 0.3f else 1f
+        val playerTechs = state.currentPlayer()?.techs
+        val researching = playerTechs?.researching
         for ((i, b) in techButtons.withIndex()) {
             val tech = com.example.strategy.model.TECH_TREE[i]
-            val researched = state.currentPlayer()?.techs?.isResearched(tech.type) == true
-            val canResearch = state.currentPlayer()?.techs?.canResearch(tech.type) == true
+            val researched = playerTechs?.isResearched(tech.type) == true
+            val canResearch = playerTechs?.canResearch(tech.type) == true
+            val isResearchingThis = researching == tech.type
             when {
-                researched -> { b.color.a = 1f; b.label.color = Color.GREEN }
-                canResearch && !dimmed -> { b.color.a = 1f; b.label.color = Color.WHITE }
-                else -> { b.color.a = 0.3f; b.label.color = Color.GRAY }
+                researched -> { b.color.a = 1f; b.label.color = Color.GREEN; b.label.setText(tech.name.take(8)) }
+                isResearchingThis -> {
+                    b.color.a = 1f; b.label.color = Color(0.5f, 0.8f, 1f, 1f)
+                    b.label.setText("${tech.name.take(6)} ${playerTechs.turnsLeft}t")
+                }
+                canResearch && !dimmed -> { b.color.a = 1f; b.label.color = Color.WHITE; b.label.setText(tech.name.take(8)) }
+                else -> { b.color.a = 0.3f; b.label.color = Color.GRAY; b.label.setText(tech.name.take(8)) }
             }
         }
         updateStatsLabel()
@@ -516,6 +552,22 @@ class GameUI(
         closeBtn.label.setFontScale(0.9f)
         closeBtn.addListener(object : ClickListener() { override fun clicked(event: InputEvent?, x: Float, y: Float) { win.remove() } })
         win.add(closeBtn).width(120f)
+        win.pack()
+        win.setPosition(Gdx.graphics.width / 2f - win.width / 2f, Gdx.graphics.height / 2f - win.height / 2f)
+        stage.addActor(win)
+    }
+
+    fun showHelpDialog() {
+        val win = Window(Locale.HELP_TITLE, skin)
+        win.isModal = true; win.isMovable = true; win.pad(16f); win.defaults().pad(3f)
+        val helpText = Label(Locale.HELP_TEXT, skin)
+        helpText.setWrap(true)
+        helpText.setFontScale(0.75f)
+        win.add(helpText).width(400f).row()
+        val closeBtn = TextButton(Locale.CLOSE, skin)
+        closeBtn.label.setFontScale(0.9f)
+        closeBtn.addListener(object : ClickListener() { override fun clicked(event: InputEvent?, x: Float, y: Float) { win.remove() } })
+        win.add(closeBtn).width(120f).padTop(10f)
         win.pack()
         win.setPosition(Gdx.graphics.width / 2f - win.width / 2f, Gdx.graphics.height / 2f - win.height / 2f)
         stage.addActor(win)

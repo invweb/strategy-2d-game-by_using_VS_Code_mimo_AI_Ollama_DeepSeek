@@ -28,9 +28,25 @@ class MapRenderer(
         generateUnitIcons()
     }
 
-    fun drawTiles(state: GameState, animTime: Float, actionUsedThisTurn: Boolean, selectedRegions: List<Region>, reachableRegions: Set<Region> = emptySet()) {
+    fun drawTiles(state: GameState, animTime: Float, actionUsedThisTurn: Boolean, selectedRegions: List<Region>, reachableRegions: Set<Region> = emptySet(), camera: com.badlogic.gdx.graphics.OrthographicCamera? = null) {
+        var minTileX = 0
+        var maxTileX = state.map.width - 1
+        var minTileY = 0
+        var maxTileY = state.map.height - 1
+        if (camera != null) {
+            val halfW = (com.badlogic.gdx.Gdx.graphics.width / 2f) * camera.zoom
+            val halfH = (com.badlogic.gdx.Gdx.graphics.height / 2f) * camera.zoom
+            minTileX = ((camera.position.x - halfW) / tileSize - 1).toInt().coerceAtLeast(0)
+            maxTileX = ((camera.position.x + halfW) / tileSize + 1).toInt().coerceAtMost(state.map.width - 1)
+            minTileY = ((camera.position.y - halfH) / tileSize - 1).toInt().coerceAtLeast(0)
+            maxTileY = ((camera.position.y + halfH) / tileSize + 1).toInt().coerceAtMost(state.map.height - 1)
+        }
+
         batch.begin()
         for (region in state.map.regions) {
+            if (region.tileX < minTileX || region.tileX > maxTileX ||
+                region.tileY < minTileY || region.tileY > maxTileY) continue
+
             val explored = state.fog.isExplored(0, region.id)
             if (!explored) {
                 val x = region.tileX * tileSize
