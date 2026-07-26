@@ -26,6 +26,9 @@ object AStar {
         TerrainType.HILLS -> 2
         TerrainType.MOUNTAIN -> 4
         TerrainType.WATER -> Int.MAX_VALUE // impassable
+        TerrainType.DESERT -> 2
+        TerrainType.SWAMP -> 3
+        TerrainType.SNOW -> 2
     }
 
     fun findPath(gameMap: GameMap, startId: Int, endId: Int): List<Region> {

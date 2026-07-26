@@ -8,7 +8,10 @@ enum class TerrainType {
     FOREST,
     MOUNTAIN,
     HILLS,
-    WATER
+    WATER,
+    DESERT,
+    SWAMP,
+    SNOW
 }
 
 @Serializable

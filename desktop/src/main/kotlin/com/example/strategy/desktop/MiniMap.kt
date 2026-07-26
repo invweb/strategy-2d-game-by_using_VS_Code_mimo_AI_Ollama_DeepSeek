@@ -59,6 +59,9 @@ class MiniMap(private val tileSize: Float) {
                     TerrainType.FOREST -> Color(0.15f, 0.4f, 0.15f, 1f)
                     TerrainType.MOUNTAIN -> Color(0.5f, 0.45f, 0.4f, 1f)
                     TerrainType.HILLS -> Color(0.55f, 0.5f, 0.35f, 1f)
+                    TerrainType.DESERT -> Color(0.8f, 0.7f, 0.4f, 1f)
+                    TerrainType.SWAMP -> Color(0.3f, 0.4f, 0.25f, 1f)
+                    TerrainType.SNOW -> Color(0.9f, 0.92f, 0.95f, 1f)
                 }
             }
             pix.setColor(color)

@@ -1,5 +1,6 @@
 package com.example.strategy.desktop
 
+import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.graphics.Pixmap
 import com.badlogic.gdx.graphics.Texture
@@ -21,7 +22,7 @@ class MapRenderer(
     data class TileKey(val terrain: TerrainType, val ownerId: Int?)
 
     fun generateAll() {
-        generateTileTextures()
+        loadTileset()
         generateBuildingIcons()
         generateUnitIcons()
     }
@@ -38,11 +39,17 @@ class MapRenderer(
                 batch.setColor(Color.WHITE)
                 continue
             }
-            val key = TileKey(region.terrain, region.ownerId)
-            val tr = tileTextures[key] ?: continue
+            val tr = tileTextures[TileKey(region.terrain, null)] ?: continue
             val x = region.tileX * tileSize
             val y = (state.map.height - 1 - region.tileY) * tileSize
             batch.draw(tr, x, y, tileSize, tileSize)
+
+            if (region.ownerId != null) {
+                val bc = if (region.ownerId == 0) Color(0.3f, 0.3f, 1f, 0.5f) else Color(1f, 0.3f, 0.3f, 0.5f)
+                batch.setColor(bc)
+                batch.draw(tr, x, y, tileSize, tileSize)
+                batch.setColor(Color.WHITE)
+            }
 
             if (region.terrain != TerrainType.WATER) {
                 val popText = "${region.population}"
@@ -73,7 +80,7 @@ class MapRenderer(
                     if (region.buildings.isEmpty() || region.buildings.any { it.type == BuildingType.BARRACKS }) {
                         val pulse = (kotlin.math.sin(animTime * 3f) * 0.2f + 0.35f)
                         batch.setColor(0.2f, 1f, 0.2f, pulse)
-                        batch.draw(tileTextures[TileKey(region.terrain, region.ownerId)], x, y, tileSize, tileSize)
+                        batch.draw(tileTextures[TileKey(region.terrain, null)], x, y, tileSize, tileSize)
                         batch.setColor(Color.WHITE)
                     }
                 }
@@ -82,7 +89,7 @@ class MapRenderer(
         selectedRegions.forEach { r ->
             val x = r.tileX * tileSize; val y = (state.map.height - 1 - r.tileY) * tileSize
             batch.setColor(1f, 1f, 0f, 0.85f)
-            batch.draw(tileTextures[TileKey(r.terrain, r.ownerId)], x, y, tileSize, tileSize)
+            batch.draw(tileTextures[TileKey(r.terrain, null)], x, y, tileSize, tileSize)
             batch.setColor(Color.WHITE)
         }
         batch.end()
@@ -115,87 +122,15 @@ class MapRenderer(
         }
     }
 
-    private fun generateTileTextures() {
+    private fun loadTileset() {
+        val texture = Texture(Gdx.files.internal("tileset.png"), true)
+        texture.setFilter(Texture.TextureFilter.Nearest, Texture.TextureFilter.Nearest)
+        val tilePixelSize = 48
+
         for (terrain in TerrainType.entries) {
-            for (owner in listOf(null, 0, 1)) {
-                val key = TileKey(terrain, owner)
-                val s = tileSize.toInt()
-                val pix = Pixmap(s, s, Pixmap.Format.RGBA8888)
-                when (terrain) {
-                    TerrainType.PLAINS -> {
-                        pix.setColor(0.38f, 0.68f, 0.25f, 1f); pix.fill()
-                        pix.setColor(0.35f, 0.62f, 0.22f, 1f)
-                        for (i in 0..30) { val gx = (i * 37 % s); val gy = (i * 53 % s); pix.fillRectangle(gx, gy, 2, 3) }
-                        pix.setColor(0.42f, 0.74f, 0.30f, 1f)
-                        for (i in 0..15) { val gx = (i * 41 % s); val gy = (i * 67 % s); pix.fillRectangle(gx, gy, 1, 2) }
-                        pix.setColor(0.45f, 0.78f, 0.32f, 1f)
-                        for (i in 0..8) { val gx = (i * 29 % (s-4)) + 2; val gy = (i * 47 % (s-6)) + 2; pix.fillCircle(gx, gy, 2) }
-                    }
-                    TerrainType.FOREST -> {
-                        pix.setColor(0.22f, 0.48f, 0.18f, 1f); pix.fill()
-                        pix.setColor(0.18f, 0.42f, 0.15f, 1f)
-                        for (i in 0..25) { val gx = (i * 37 % s); val gy = (i * 53 % s); pix.fillRectangle(gx, gy, 2, 3) }
-                        val trees = listOf(Pair(10, 12), Pair(22, 8), Pair(16, 22), Pair(28, 18), Pair(6, 26))
-                        for ((tx, ty) in trees) {
-                            pix.setColor(0.35f, 0.22f, 0.10f, 1f); pix.fillRectangle(tx - 1, ty + 5, 3, 6)
-                            pix.setColor(0.12f, 0.38f, 0.10f, 1f); pix.fillCircle(tx, ty, 7)
-                            pix.setColor(0.16f, 0.45f, 0.13f, 1f); pix.fillCircle(tx, ty - 1, 5)
-                            pix.setColor(0.20f, 0.52f, 0.16f, 1f); pix.fillCircle(tx - 1, ty - 2, 3)
-                        }
-                    }
-                    TerrainType.MOUNTAIN -> {
-                        pix.setColor(0.50f, 0.44f, 0.38f, 1f); pix.fill()
-                        pix.setColor(0.46f, 0.40f, 0.34f, 1f)
-                        for (i in 0..20) { val gx = (i * 41 % s); val gy = (i * 59 % s); pix.fillRectangle(gx, gy, 3, 2) }
-                        pix.setColor(0.55f, 0.50f, 0.44f, 1f)
-                        pix.fillTriangle(s / 2, 4, s / 2 - 22, s - 6, s / 2 + 22, s - 6)
-                        pix.setColor(0.60f, 0.55f, 0.48f, 1f)
-                        pix.fillTriangle(s / 2, 4, s / 2 - 16, s - 14, s / 2 + 16, s - 14)
-                        pix.setColor(0.88f, 0.90f, 0.93f, 1f)
-                        pix.fillTriangle(s / 2, 4, s / 2 - 8, 18, s / 2 + 8, 18)
-                        pix.setColor(0.95f, 0.96f, 0.98f, 1f)
-                        pix.fillTriangle(s / 2, 4, s / 2 - 5, 12, s / 2 + 5, 12)
-                        pix.setColor(0.42f, 0.36f, 0.30f, 1f)
-                        pix.fillTriangle(s / 2 - 20, s - 6, s / 2 - 28, s, s / 2 - 4, s)
-                        pix.fillTriangle(s / 2 + 20, s - 6, s / 2 + 4, s, s / 2 + 28, s)
-                    }
-                    TerrainType.HILLS -> {
-                        pix.setColor(0.44f, 0.60f, 0.28f, 1f); pix.fill()
-                        pix.setColor(0.40f, 0.56f, 0.25f, 1f)
-                        for (i in 0..20) { val gx = (i * 37 % s); val gy = (i * 53 % s); pix.fillRectangle(gx, gy, 2, 2) }
-                        pix.setColor(0.48f, 0.64f, 0.32f, 1f)
-                        pix.fillCircle(10, 22, 10); pix.fillCircle(22, 18, 11); pix.fillCircle(32, 24, 9)
-                        pix.setColor(0.52f, 0.68f, 0.36f, 1f)
-                        pix.fillCircle(10, 20, 7); pix.fillCircle(22, 16, 8); pix.fillCircle(32, 22, 6)
-                        pix.setColor(0.46f, 0.62f, 0.30f, 1f)
-                        pix.fillCircle(16, 26, 8); pix.fillCircle(28, 28, 7)
-                    }
-                    TerrainType.WATER -> {
-                        pix.setColor(0.22f, 0.46f, 0.78f, 1f); pix.fill()
-                        pix.setColor(0.28f, 0.52f, 0.84f, 1f)
-                        for (wy in 4 until s step 7) {
-                            for (wx in 2 until s - 2 step 9) {
-                                val offset = ((wy / 7) % 2) * 4
-                                pix.fillRectangle(wx + offset, wy, 6, 2)
-                            }
-                        }
-                        pix.setColor(0.32f, 0.58f, 0.88f, 1f)
-                        for (wy in 8 until s step 10) {
-                            for (wx in 5 until s - 5 step 12) {
-                                pix.fillCircle(wx, wy, 2)
-                            }
-                        }
-                    }
-                }
-                if (owner != null) {
-                    val bc = if (owner == 0) Color(0.3f, 0.3f, 1f, 0.6f) else Color(1f, 0.3f, 0.3f, 0.6f)
-                    pix.setColor(bc)
-                    pix.fillRectangle(0, 0, s, 3); pix.fillRectangle(0, s - 3, s, 3)
-                    pix.fillRectangle(0, 0, 3, s); pix.fillRectangle(s - 3, 0, 3, s)
-                }
-                val tex = Texture(pix); pix.dispose()
-                tileTextures[key] = TextureRegion(tex)
-            }
+            val row = terrain.ordinal
+            val region = TextureRegion(texture, 0, row * tilePixelSize, tilePixelSize, tilePixelSize)
+            tileTextures[TileKey(terrain, null)] = region
         }
     }
 
