@@ -18,4 +18,5 @@ object Actions {
     const val DIPLO_BREAK = "DIPLO_BREAK"
     const val DIPLO_TRADE = "DIPLO_TRADE"
     const val DIPLO_CANCEL_TRADE = "DIPLO_CANCEL_TRADE"
+    const val UPGRADE = "UPGRADE"
 }

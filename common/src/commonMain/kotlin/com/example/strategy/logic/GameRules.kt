@@ -224,4 +224,42 @@ object GameRules {
             actionsLog = gameState.actionsLog + "${player.name} researched ${tech.name}"
         )
     }
+
+    fun processUpgradeBuilding(gameState: GameState, action: ActionQueue.GameAction): GameState {
+        val player = gameState.players.find { it.id == action.playerId } ?: return gameState
+        val region = gameState.map.getRegionById(action.targetRegionId) ?: return gameState
+
+        if (region.ownerId != player.id) return gameState
+
+        val buildingType = try {
+            BuildingType.valueOf(action.param)
+        } catch (_: Exception) {
+            return gameState
+        }
+
+        val building = region.buildings.find { it.type == buildingType } ?: return gameState
+        if (building.level >= 3) return gameState
+
+        val cost = Resources(
+            food = 15 * building.level,
+            wood = 10 * building.level,
+            stone = 10 * building.level,
+            gold = 15 * building.level
+        )
+        if (!player.resources.canAfford(cost)) return gameState
+
+        val updatedRegion = region.copy(
+            buildings = region.buildings.map {
+                if (it.type == buildingType) it.copy(level = it.level + 1) else it
+            }
+        )
+
+        return gameState.copy(
+            map = gameState.map.replaceRegion(updatedRegion),
+            players = gameState.players.map {
+                if (it.id == player.id) it.copy(resources = it.resources - cost) else it
+            },
+            actionsLog = gameState.actionsLog + "${player.name} upgraded ${buildingType.name} in ${region.name} to level ${building.level + 1}"
+        )
+    }
 }

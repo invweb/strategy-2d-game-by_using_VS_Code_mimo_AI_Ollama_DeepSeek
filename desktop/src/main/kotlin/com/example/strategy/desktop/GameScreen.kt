@@ -137,6 +137,17 @@ class GameScreen(private val game: StrategyGame) : ScreenAdapter() {
                 gameUI.infoLabel.setText("${Locale.MOVE_MODE} ${region.name}")
                 return
             }
+            if (actionType == Actions.UPGRADE) {
+                if (region.ownerId != holder.state.currentPlayerId) return
+                gameUI.showUpgradeDialog(region) { buildingType ->
+                    undoStack.add(holder.state)
+                    val action = ActionQueue.GameAction(holder.state.currentPlayerId, ActionQueue.ActionType.UPGRADE_BUILDING, region.id, buildingType.name)
+                    ActionQueue.DEFAULT.enqueue(action); holder.state = ActionQueue.DEFAULT.processAll(holder.state)
+                    game.gameState = holder.state; holder.selectedRegion = holder.state.map.getRegionById(region.id); holder.actionUsedThisTurn = true
+                    gameUI.updateInfoLabel()
+                }
+                return
+            }
             val action = when (actionType) {
                 Actions.BUILD_FARM -> ActionQueue.GameAction(holder.state.currentPlayerId, ActionQueue.ActionType.BUILD, region.id, "FARM")
                 Actions.BUILD_LUMBER_MILL -> ActionQueue.GameAction(holder.state.currentPlayerId, ActionQueue.ActionType.BUILD, region.id, "LUMBER_MILL")

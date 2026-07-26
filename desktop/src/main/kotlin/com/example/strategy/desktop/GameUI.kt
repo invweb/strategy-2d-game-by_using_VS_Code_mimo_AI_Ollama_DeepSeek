@@ -99,6 +99,12 @@ class GameUI(
         panel.add(btn(Locale.MOVE_BTN, Actions.MOVE)).fillX().row()
         panel.add(btn(Locale.ATTACK_BTN, Actions.ATTACK)).fillX()
 
+        val upgradeBtn = TextButton(Locale.UPGRADE_BTN, skin)
+        upgradeBtn.label.setFontScale(0.7f); upgradeBtn.label.color = Color(0.8f, 0.7f, 0.2f, 1f)
+        upgradeBtn.addListener(object : ClickListener() { override fun clicked(event: InputEvent?, x: Float, y: Float) { actionHandler(Actions.UPGRADE) } })
+        actionButtons.add(upgradeBtn)
+        panel.add(upgradeBtn).fillX().padLeft(10f)
+
         val endBtn = TextButton(Locale.END_TURN, skin)
         endBtn.label.setFontScale(0.75f); endBtn.label.color = Color.GOLD
         endBtn.addListener(object : ClickListener() { override fun clicked(event: InputEvent?, x: Float, y: Float) { actionHandler(Actions.END_TURN) } })
@@ -479,5 +485,39 @@ class GameUI(
             eventTimer -= delta
             if (eventTimer <= 0f) { eventLabel?.remove(); eventTimer = 0f }
         }
+    }
+
+    fun showUpgradeDialog(region: Region, onUpgrade: (BuildingType) -> Unit) {
+        val win = Window("Upgrade", skin)
+        win.isModal = true; win.isMovable = true; win.pad(16f); win.defaults().pad(5f)
+        win.add(Label("${Locale.UPGRADE_BTN} — ${region.name}", skin)).colspan(2).row()
+        val upgradeable = region.buildings.filter { it.level < 3 }
+        if (upgradeable.isEmpty()) {
+            win.add(Label(Locale.NO_UPGRADABLE, skin)).colspan(2).row()
+        }
+        for (building in upgradeable) {
+            val cost = com.example.strategy.model.Resources(
+                food = 15 * building.level,
+                wood = 10 * building.level,
+                stone = 10 * building.level,
+                gold = 15 * building.level
+            )
+            val costText = "${building.type.name} Lv${building.level}→${building.level + 1} (${cost.food}F ${cost.wood}W ${cost.stone}S ${cost.gold}G)"
+            val b = TextButton(costText, skin)
+            b.label.setFontScale(0.7f)
+            b.addListener(object : ClickListener() {
+                override fun clicked(event: InputEvent?, x: Float, y: Float) {
+                    win.remove(); onUpgrade(building.type)
+                }
+            })
+            win.add(b).colspan(2).fillX().row()
+        }
+        val closeBtn = TextButton(Locale.CANCEL, skin)
+        closeBtn.label.setFontScale(0.9f)
+        closeBtn.addListener(object : ClickListener() { override fun clicked(event: InputEvent?, x: Float, y: Float) { win.remove() } })
+        win.add(closeBtn).width(120f)
+        win.pack()
+        win.setPosition(Gdx.graphics.width / 2f - win.width / 2f, Gdx.graphics.height / 2f - win.height / 2f)
+        stage.addActor(win)
     }
 }

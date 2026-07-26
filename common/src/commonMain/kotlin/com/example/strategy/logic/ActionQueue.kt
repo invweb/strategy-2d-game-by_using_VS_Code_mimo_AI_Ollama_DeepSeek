@@ -25,7 +25,8 @@ class ActionQueue {
         RESEARCH,
         RECRUIT_INFANTRY,
         RECRUIT_CAVALRY,
-        RECRUIT_SIEGE
+        RECRUIT_SIEGE,
+        UPGRADE_BUILDING
     }
 
     private val pendingActions: MutableList<GameAction> = mutableListOf()
@@ -55,6 +56,7 @@ class ActionQueue {
                 ActionType.RECRUIT_INFANTRY -> GameRules.processRecruitUnit(state, action, UnitType.INFANTRY)
                 ActionType.RECRUIT_CAVALRY -> GameRules.processRecruitUnit(state, action, UnitType.CAVALRY)
                 ActionType.RECRUIT_SIEGE -> GameRules.processRecruitUnit(state, action, UnitType.SIEGE)
+                ActionType.UPGRADE_BUILDING -> GameRules.processUpgradeBuilding(state, action)
             }
         }
         return state

@@ -490,6 +490,12 @@ object Locale {
     val ATTACK_BTN get() = when(current) {
         Lang.RU -> "АТАКА"; Lang.DE -> "ANGREIFEN"; Lang.EN -> "ATTACK"
     }
+    val UPGRADE_BTN get() = when(current) {
+        Lang.RU -> "УЛУЧШИТЬ"; Lang.DE -> "AUSBESSERN"; Lang.EN -> "UPGRADE"
+    }
+    val NO_UPGRADABLE get() = when(current) {
+        Lang.RU -> "Нет зданий для улучшения"; Lang.DE -> "Keine Gebäude zum Ausbessern"; Lang.EN -> "No buildings to upgrade"
+    }
 
     val TRADE_ACTIVE get() = when(current) {
         Lang.RU -> "Торговля"; Lang.DE -> "Handel"; Lang.EN -> "Trade"
