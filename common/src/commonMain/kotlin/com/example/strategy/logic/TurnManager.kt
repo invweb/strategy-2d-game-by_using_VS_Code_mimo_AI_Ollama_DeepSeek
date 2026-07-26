@@ -7,10 +7,12 @@ import com.example.strategy.model.TurnSnapshot
 // Turn manager — orchestrates turn flow
 object TurnManager {
 
-    fun startTurn(gameState: GameState): GameState {
+    data class TurnResult(val state: GameState, val event: RandomEvents.Event? = null)
+
+    fun startTurn(gameState: GameState): TurnResult {
         var updated = Economy.applyTurnIncome(gameState)
         updated = DiplomacyManager.applyTradeIncome(updated)
-        val player = updated.currentPlayer() ?: return updated
+        val player = updated.currentPlayer() ?: return TurnResult(updated)
         val upkeep = Economy.upkeepCost(player, updated.map)
         val afterUpkeep = updated.copy(
             players = updated.players.map {
@@ -25,7 +27,7 @@ object TurnManager {
             result = RandomEvents.applyEvent(result, event)
         }
 
-        return result
+        return TurnResult(result, event)
     }
 
     fun endTurn(gameState: GameState): GameState {
@@ -54,7 +56,7 @@ object TurnManager {
         var state = gameState
         for (player in gameState.players) {
             state = state.copy(currentPlayerId = player.id)
-            state = startTurn(state)
+            state = startTurn(state).state
             state = endTurn(state)
         }
         return state.copy(turn = state.turn + 1)

@@ -457,4 +457,27 @@ class GameUI(
             if (tutorialTimer <= 0f) { tutorialLabel?.remove(); tutorialTimer = 0f }
         }
     }
+
+    private var eventTimer = 0f
+    private var eventLabel: Label? = null
+
+    fun showEventNotification(description: String) {
+        eventLabel?.remove()
+        val label = Label(description, skin)
+        label.color = Color(1f, 0.9f, 0.3f, 0.95f)
+        label.setFontScale(0.85f)
+        label.setWrap(true)
+        label.setSize(450f, 50f)
+        label.setPosition(Gdx.graphics.width / 2f - 225f, Gdx.graphics.height - 90f)
+        stage.addActor(label)
+        eventLabel = label
+        eventTimer = 4f
+    }
+
+    fun updateEvent(delta: Float) {
+        if (eventTimer > 0f) {
+            eventTimer -= delta
+            if (eventTimer <= 0f) { eventLabel?.remove(); eventTimer = 0f }
+        }
+    }
 }

@@ -8,13 +8,13 @@ import com.badlogic.gdx.graphics.OrthographicCamera
 import com.badlogic.gdx.graphics.g2d.GlyphLayout
 import com.badlogic.gdx.graphics.g2d.SpriteBatch
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer
-import com.badlogic.gdx.scenes.scene2d.InputEvent
 import com.badlogic.gdx.scenes.scene2d.Stage
 import com.badlogic.gdx.scenes.scene2d.ui.Label
 import com.badlogic.gdx.scenes.scene2d.ui.Skin
 import com.badlogic.gdx.scenes.scene2d.ui.Table
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener
+import com.badlogic.gdx.scenes.scene2d.InputEvent
 import com.badlogic.gdx.utils.viewport.ScreenViewport
 import com.example.strategy.model.*
 import com.example.strategy.logic.ActionQueue
@@ -50,27 +50,39 @@ class NetworkGameScreen(
 
     private lateinit var mapRenderer: MapRenderer
     private lateinit var gameInput: GameInput
-
-    private lateinit var infoLabel: Label
-    private lateinit var statusLabel: Label
-    private lateinit var diplomacyLabel: Label
-    private lateinit var statsLabel: Label
+    private lateinit var gameUI: GameUI
     private lateinit var skin: Skin
-    private var showStats = false
-    private val actionButtons = mutableListOf<TextButton>()
-    private val buildButtons = mutableListOf<TextButton>()
-    private val diploButtons = mutableListOf<TextButton>()
-    private val techButtons = mutableListOf<TextButton>()
 
     override fun show() {
         alive = true
         soundManager?.dispose()
         soundManager = SoundManager()
-        skin = createSkin()
+        skin = SkinFactory.createSkin()
         stage = Stage(ScreenViewport())
 
         mapRenderer = MapRenderer(batch, shapeRenderer, tileSize, game)
         mapRenderer.generateAll()
+
+        gameUI = GameUI(
+            stage = stage,
+            skin = skin,
+            stateProvider = { state },
+            selectedRegionProvider = { selectedRegion },
+            selectedRegionsProvider = { selectedRegions },
+            actionUsedThisTurnProvider = { actionUsedThisTurn },
+            aiPendingProvider = { aiPending },
+            gameOverProvider = { gameOver },
+            actionHandler = { handleAction(it) },
+            undoHandler = { },
+            menuHandler = { networkClient.disconnect(); game.setScreen(LobbyScreen(game)) },
+            camera = camera,
+            soundPlayer = { soundManager?.play(it) },
+            stateSetter = { state = it; game.gameState = it; sendStateUpdate() },
+            resetMode = { resetMode() },
+            infoLabelRef = { gameUI.infoLabel },
+            statusLabelRef = { gameUI.statusLabel }
+        )
+        gameUI.build()
 
         gameInput = GameInput(
             game, camera, stage, tileSize,
@@ -90,16 +102,14 @@ class NetworkGameScreen(
             moveSourceIdProvider = { moveSourceId },
             moveSourceIdSetter = { moveSourceId = it },
             aiPendingProvider = { aiPending },
-            updateInfoLabel = { updateInfoLabel() },
-            infoLabelSetter = { infoLabel.setText(it) },
-            statusLabelSetter = { statusLabel.setText(it) },
-            statusLabelColorSetter = { statusLabel.color = it },
+            updateInfoLabel = { gameUI.updateInfoLabel() },
+            infoLabelSetter = { gameUI.infoLabel.setText(it) },
+            statusLabelSetter = { gameUI.statusLabel.setText(it) },
+            statusLabelColorSetter = { gameUI.statusLabel.color = it },
             soundPlayer = { soundManager?.play(it) },
             animProvider = { animManager },
             mapRenderer = mapRenderer
         )
-
-        buildUI()
         gameInput.setup()
 
         val mapPixelW = state.map.width * tileSize
@@ -110,36 +120,45 @@ class NetworkGameScreen(
         camera.viewportHeight = Gdx.graphics.height.toFloat()
         camera.update()
 
-        // Setup network message handler
         networkClient.onMessage = { msg -> handleNetworkMessage(msg) }
+        gameUI.updateInfoLabel()
+    }
 
-        updateInfoLabel()
+    private fun resetMode() {
+        selectedRegion = null; selectedRegions.clear()
+        actionUsedThisTurn = false
+        attackMode = false; attackSourceId = -1
+        moveMode = false; moveSourceId = -1
+        gameInput.clearReachable()
+        gameUI.updateInfoLabel()
     }
 
     private fun handleNetworkMessage(message: NetworkClient.ServerMessage) {
         when (message) {
             is NetworkClient.ServerMessage.TurnUpdate -> {
-                state = TurnManager.startTurn(state)
+                val turnResult = TurnManager.startTurn(state)
+                state = turnResult.state
                 game.gameState = state
                 actionUsedThisTurn = false
-                updateInfoLabel()
+                gameUI.updateInfoLabel()
             }
             is NetworkClient.ServerMessage.ActionApplied -> {
                 state = game.gameState
-                updateInfoLabel()
+                gameUI.updateInfoLabel()
             }
             is NetworkClient.ServerMessage.Error -> {
-                statusLabel.setText("${Locale.ERROR} ${message.message}")
-                statusLabel.color = Color.RED
+                gameUI.statusLabel.setText("${Locale.ERROR} ${message.message}")
+                gameUI.statusLabel.color = Color.RED
             }
             is NetworkClient.ServerMessage.OpponentDisconnected -> {
-                statusLabel.setText(Locale.OPPONENT_DISCONNECTED)
-                statusLabel.color = Color.ORANGE
+                gameUI.statusLabel.setText(Locale.OPPONENT_DISCONNECTED)
+                gameUI.statusLabel.color = Color.ORANGE
             }
             is NetworkClient.ServerMessage.GameStarted -> {
-                state = TurnManager.startTurn(state)
+                val turnResult = TurnManager.startTurn(state)
+                state = turnResult.state
                 game.gameState = state
-                updateInfoLabel()
+                gameUI.updateInfoLabel()
             }
             else -> {}
         }
@@ -151,124 +170,16 @@ class NetworkGameScreen(
         }
     }
 
-    private fun buildUI() {
-        val root = Table(skin).apply { setFillParent(true) }
-
-        val topPanel = Table(skin).apply { left().top().pad(10f); defaults().left().padBottom(2f) }
-        infoLabel = Label(Locale.CLICK_REGION, skin)
-        statusLabel = Label("", skin)
-        statsLabel = Label("", skin)
-        statsLabel.color = Color.LIGHT_GRAY
-        topPanel.add(infoLabel).row()
-        topPanel.add(statusLabel).row()
-        topPanel.add(statsLabel).row()
-        root.add(topPanel).left().top().expandX().colspan(2).row()
-
-        val panel = Table(skin).apply { right().bottom().pad(10f); defaults().pad(3f).right() }
-
-        fun btn(text: String, action: String): TextButton {
-            val b = TextButton(text, skin)
-            b.label.setFontScale(0.75f)
-            b.addListener(object : ClickListener() {
-                override fun clicked(event: InputEvent?, x: Float, y: Float) { handleAction(action) }
-            })
-            actionButtons.add(b)
-            return b
-        }
-
-        fun diploBtn(text: String, action: String): TextButton {
-            val b = TextButton(text, skin)
-            b.label.setFontScale(0.65f)
-            b.addListener(object : ClickListener() {
-                override fun clicked(event: InputEvent?, x: Float, y: Float) { handleAction(action) }
-            })
-            diploButtons.add(b)
-            return b
-        }
-
-        panel.add(btn(Locale.BUILD_FARM, Actions.BUILD_FARM)).fillX()
-        panel.add(btn(Locale.BUILD_LUMBER, Actions.BUILD_LUMBER_MILL)).fillX()
-        panel.add(btn(Locale.BUILD_BARRACKS_COST, Actions.BUILD_BARRACKS)).fillX().row()
-        panel.add(btn(Locale.BUILD_MINE_COST, Actions.BUILD_MINE)).fillX()
-        panel.add(btn(Locale.RECRUIT_COST, Actions.RECRUIT)).fillX()
-        panel.add(btn(Locale.RECRUIT_INFANTRY_COST, Actions.RECRUIT_INFANTRY)).fillX().row()
-        panel.add(btn(Locale.RECRUIT_CAVALRY_COST, Actions.RECRUIT_CAVALRY)).fillX().row()
-        panel.add(btn(Locale.RECRUIT_SIEGE_COST, Actions.RECRUIT_SIEGE)).fillX()
-        panel.add(btn(Locale.DEVELOP_COST, Actions.DEVELOP)).fillX()
-        panel.add(btn(Locale.MOVE_BTN, Actions.MOVE)).fillX().row()
-        panel.add(btn(Locale.ATTACK_BTN, Actions.ATTACK)).fillX()
-
-        val endBtn = TextButton(Locale.END_TURN, skin)
-        endBtn.label.setFontScale(0.75f); endBtn.label.color = Color.GOLD
-        endBtn.addListener(object : ClickListener() {
-            override fun clicked(event: InputEvent?, x: Float, y: Float) { handleAction(Actions.END_TURN) }
-        })
-        panel.add(endBtn).fillX().padLeft(10f)
-
-        val backBtn = TextButton(Locale.MENU, skin)
-        backBtn.label.setFontScale(0.75f); backBtn.label.color = Color.LIGHT_GRAY
-        backBtn.addListener(object : ClickListener() {
-            override fun clicked(event: InputEvent?, x: Float, y: Float) {
-                networkClient.disconnect()
-                game.setScreen(LobbyScreen(game))
-            }
-        })
-        panel.add(backBtn).fillX().padLeft(10f)
-
-        root.add().expandY()
-        root.add(panel).right().bottom().pad(10f)
-        stage.addActor(root)
-    }
-
-    private fun updateInfoLabel() {
-        val r = selectedRegion
-        val player = state.currentPlayer()
-        val isMyTurn = state.currentPlayerId == myPlayerId
-
-        val myTerritories = state.map.regions.count { it.ownerId == myPlayerId }
-        val enemyTerritories = state.map.regions.count { it.ownerId != myPlayerId && it.terrain != TerrainType.WATER }
-
-        if (r == null) {
-            infoLabel.setText(Locale.CLICK_REGION)
-        } else if (!state.fog.isExplored(myPlayerId, r.id)) {
-            infoLabel.setText(Locale.UNKNOWN_TERRITORY)
-        } else {
-            val owner = when (r.ownerId) { myPlayerId -> Locale.YOURS; null -> Locale.NEUTRAL; else -> Locale.ENEMY }
-            val buildings = if (r.buildings.isEmpty()) Locale.NO_BUILDINGS else r.buildings.joinToString { it.type.name }
-            val attack = r.population + r.units.totalAttack()
-            val defense = r.population + r.units.totalDefense() + r.buildings.count { it.type == BuildingType.WALL } * 5
-            val unitInfo = if (r.units.units.isEmpty()) Locale.NO_UNITS else r.units.units.joinToString { "${it.count} ${it.type.name.lowercase()}" }
-            infoLabel.setText("${r.name} | ${r.terrain} | $owner\n${Locale.POPULATION}: ${r.population} (${Locale.ATTACK}: $attack, ${Locale.DEFENSE}: $defense)\n${Locale.UNITS}: $unitInfo\n${Locale.BUILDINGS}: $buildings")
-        }
-
-        statusLabel.setText(
-            "${Locale.TURN} ${state.turn} | My ID: $myPlayerId\n" +
-            "${Locale.TERRITORIES}: You $myTerritories vs Enemy $enemyTerritories\n" +
-            when {
-                actionUsedThisTurn -> Locale.ACTION_USED
-                isMyTurn -> Locale.YOUR_TURN
-                else -> Locale.WAITING
-            }
-        )
-        statusLabel.color = when {
-            actionUsedThisTurn -> Color.ORANGE
-            isMyTurn -> Color.GREEN
-            else -> Color.GRAY
-        }
-
-        val dimmed = actionUsedThisTurn || !isMyTurn
-        for (b in actionButtons) b.color.a = if (dimmed) 0.3f else 1f
-    }
-
     private fun handleAction(actionType: String) {
         try {
             if (actionType == Actions.END_TURN) {
                 state = TurnManager.endTurn(state)
                 game.gameState = state; selectedRegion = null; selectedRegions.clear(); actionUsedThisTurn = false
                 attackMode = false; attackSourceId = -1; moveMode = false; moveSourceId = -1
+                gameInput.clearReachable()
                 soundManager?.play(SoundManager.SoundType.END_TURN)
                 sendStateUpdate()
-                updateInfoLabel()
+                gameUI.updateInfoLabel()
                 return
             }
             if (actionUsedThisTurn || gameOver) return
@@ -279,7 +190,7 @@ class NetworkGameScreen(
                 game.gameState = state; actionUsedThisTurn = true
                 soundManager?.play(SoundManager.SoundType.RESEARCH)
                 networkClient.sendGameState(state, "ActionApplied")
-                updateInfoLabel()
+                gameUI.updateInfoLabel()
                 return
             }
             val region = selectedRegion
@@ -287,13 +198,14 @@ class NetworkGameScreen(
             if (actionType == Actions.ATTACK) {
                 if (region.ownerId != state.currentPlayerId) return
                 attackMode = true; attackSourceId = region.id
-                infoLabel.setText("${Locale.ATTACK_MODE} ${region.name}")
+                gameUI.infoLabel.setText("${Locale.ATTACK_MODE} ${region.name}")
                 return
             }
             if (actionType == Actions.MOVE) {
                 if (region.ownerId != state.currentPlayerId) return
                 moveMode = true; moveSourceId = region.id
-                infoLabel.setText("${Locale.MOVE_MODE} ${region.name}")
+                gameInput.calculateReachable(region.id)
+                gameUI.infoLabel.setText("${Locale.MOVE_MODE} ${region.name}")
                 return
             }
             val action = when (actionType) {
@@ -308,10 +220,10 @@ class NetworkGameScreen(
                 Actions.DEVELOP -> ActionQueue.GameAction(state.currentPlayerId, ActionQueue.ActionType.DEVELOP, region.id)
                 else -> return
             }
-        ActionQueue.DEFAULT.enqueue(action); state = ActionQueue.DEFAULT.processAll(state)
+            ActionQueue.DEFAULT.enqueue(action); state = ActionQueue.DEFAULT.processAll(state)
             game.gameState = state; selectedRegion = state.map.getRegionById(region.id); actionUsedThisTurn = true
             networkClient.sendGameState(state, "ActionApplied")
-            updateInfoLabel()
+            gameUI.updateInfoLabel()
         } catch (e: Exception) {
             Gdx.app.error("NetworkGameScreen", "Action error: ${e.message}")
         }
@@ -330,7 +242,7 @@ class NetworkGameScreen(
         game.gameState = state; actionUsedThisTurn = true
         soundManager?.play(SoundManager.SoundType.ALLIANCE)
         networkClient.sendGameState(state, "ActionApplied")
-        updateInfoLabel()
+        gameUI.updateInfoLabel()
     }
 
     override fun render(delta: Float) {
@@ -341,8 +253,10 @@ class NetworkGameScreen(
             camera.update()
             batch.projectionMatrix = camera.combined
             animTime += delta
+            gameUI.update(delta)
+            gameUI.updateEvent(delta)
 
-            mapRenderer.drawTiles(state, animTime, actionUsedThisTurn, selectedRegions)
+            mapRenderer.drawTiles(state, animTime, actionUsedThisTurn, selectedRegions, gameInput.reachableRegions)
             mapRenderer.drawSelectionBox(gameInput.isBoxSelecting, gameInput.boxStartScreenX, gameInput.boxStartScreenY)
 
             animManager.update(delta)
@@ -368,6 +282,4 @@ class NetworkGameScreen(
     override fun hide() { alive = false }
     override fun resize(width: Int, height: Int) { camera.viewportWidth = width.toFloat(); camera.viewportHeight = height.toFloat(); camera.update(); stage.viewport.update(width, height, true) }
     override fun dispose() { batch.dispose(); shapeRenderer.dispose(); soundManager?.dispose(); mapRenderer.dispose(); stage.dispose(); skin.dispose() }
-
-    private fun createSkin(): Skin = SkinFactory.createSkin()
 }

@@ -22,9 +22,9 @@ class TurnManagerTest {
     @Test
     fun `startTurn applies income to current player`() {
         val state = createTestGameState()
-        val newState = TurnManager.startTurn(state)
+        val result = TurnManager.startTurn(state)
 
-        val player = newState.players.find { it.id == 0 }!!
+        val player = result.state.players.find { it.id == 0 }!!
         assertTrue(player.resources.food > 50) // income added
     }
 

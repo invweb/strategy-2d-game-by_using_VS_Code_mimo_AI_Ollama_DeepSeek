@@ -47,6 +47,7 @@ class GameScreen(private val game: StrategyGame) : ScreenAdapter() {
     private lateinit var gameInput: GameInput
     private lateinit var gameUI: GameUI
     private lateinit var skin: Skin
+    private lateinit var miniMap: MiniMap
 
     override fun show() {
         alive = true
@@ -57,6 +58,7 @@ class GameScreen(private val game: StrategyGame) : ScreenAdapter() {
 
         mapRenderer = MapRenderer(batch, shapeRenderer, tileSize, game)
         mapRenderer.generateAll()
+        miniMap = MiniMap(tileSize)
 
         gameUI = GameUI(
             stage = stage,
@@ -115,9 +117,11 @@ class GameScreen(private val game: StrategyGame) : ScreenAdapter() {
         camera.viewportHeight = Gdx.graphics.height.toFloat()
         camera.update()
 
-        state = TurnManager.startTurn(state)
+        val turnResult = TurnManager.startTurn(state)
+        state = turnResult.state
         game.gameState = state
         gameUI.updateInfoLabel()
+        turnResult.event?.let { gameUI.showEventNotification(it.description) }
 
         gameUI.showTutorialHint()
     }
@@ -231,7 +235,8 @@ class GameScreen(private val game: StrategyGame) : ScreenAdapter() {
     private fun runAITurns() {
         if (state.currentPlayerId == 0) return
         aiPending = true
-        state = TurnManager.startTurn(state)
+        val turnResult = TurnManager.startTurn(state)
+        state = turnResult.state
         game.gameState = state
         Thread {
             try {
@@ -268,6 +273,7 @@ class GameScreen(private val game: StrategyGame) : ScreenAdapter() {
             animTime += delta
             gameUI.update(delta)
             gameUI.updateTutorial(delta)
+            gameUI.updateEvent(delta)
 
             mapRenderer.drawTiles(state, animTime, actionUsedThisTurn, selectedRegions, gameInput.reachableRegions)
             mapRenderer.drawSelectionBox(gameInput.isBoxSelecting, gameInput.boxStartScreenX, gameInput.boxStartScreenY)
@@ -281,6 +287,7 @@ class GameScreen(private val game: StrategyGame) : ScreenAdapter() {
             stage.act(delta); stage.draw()
 
             game.batch.begin()
+            miniMap.render(game.batch, state, Gdx.graphics.width, Gdx.graphics.height)
             val player = state.currentPlayer()
             val resText = "Food: ${player?.resources?.food ?: 0}   Wood: ${player?.resources?.wood ?: 0}   Stone: ${player?.resources?.stone ?: 0}   Gold: ${player?.resources?.gold ?: 0}   Iron: ${player?.resources?.iron ?: 0}"
             val resLayout = GlyphLayout(game.font, resText)
@@ -294,5 +301,5 @@ class GameScreen(private val game: StrategyGame) : ScreenAdapter() {
 
     override fun hide() { alive = false }
     override fun resize(width: Int, height: Int) { camera.viewportWidth = width.toFloat(); camera.viewportHeight = height.toFloat(); camera.update(); stage.viewport.update(width, height, true) }
-    override fun dispose() { batch.dispose(); shapeRenderer.dispose(); soundManager?.dispose(); mapRenderer.dispose(); stage.dispose(); skin.dispose() }
+    override fun dispose() { batch.dispose(); shapeRenderer.dispose(); soundManager?.dispose(); mapRenderer.dispose(); miniMap.dispose(); stage.dispose(); skin.dispose() }
 }
