@@ -9,12 +9,7 @@ import com.badlogic.gdx.graphics.g2d.GlyphLayout
 import com.badlogic.gdx.graphics.g2d.SpriteBatch
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer
 import com.badlogic.gdx.scenes.scene2d.Stage
-import com.badlogic.gdx.scenes.scene2d.ui.Label
 import com.badlogic.gdx.scenes.scene2d.ui.Skin
-import com.badlogic.gdx.scenes.scene2d.ui.Table
-import com.badlogic.gdx.scenes.scene2d.ui.TextButton
-import com.badlogic.gdx.scenes.scene2d.utils.ClickListener
-import com.badlogic.gdx.scenes.scene2d.InputEvent
 import com.badlogic.gdx.utils.viewport.ScreenViewport
 import com.example.strategy.model.*
 import com.example.strategy.logic.ActionQueue
@@ -31,21 +26,12 @@ class NetworkGameScreen(
     private val batch = SpriteBatch()
     private val shapeRenderer = ShapeRenderer()
 
-    private var selectedRegion: Region? = null
-    private val selectedRegions = mutableListOf<Region>()
-    private var state = game.gameState
-    private var actionUsedThisTurn = false
-    private var attackMode = false
-    private var attackSourceId = -1
-    private var moveMode = false
-    private var moveSourceId = -1
-    private var gameOver = false
+    private val holder = GameStateHolder(state = game.gameState)
 
     private val tileSize = 128f
     private val animManager = AnimationManager()
     private var soundManager: SoundManager? = null
     private var animTime = 0f
-    private var aiPending = false
     private var alive = false
 
     private lateinit var mapRenderer: MapRenderer
@@ -66,18 +52,18 @@ class NetworkGameScreen(
         gameUI = GameUI(
             stage = stage,
             skin = skin,
-            stateProvider = { state },
-            selectedRegionProvider = { selectedRegion },
-            selectedRegionsProvider = { selectedRegions },
-            actionUsedThisTurnProvider = { actionUsedThisTurn },
-            aiPendingProvider = { aiPending },
-            gameOverProvider = { gameOver },
+            stateProvider = { holder.state },
+            selectedRegionProvider = { holder.selectedRegion },
+            selectedRegionsProvider = { holder.selectedRegions },
+            actionUsedThisTurnProvider = { holder.actionUsedThisTurn },
+            aiPendingProvider = { holder.aiPending },
+            gameOverProvider = { holder.gameOver },
             actionHandler = { handleAction(it) },
             undoHandler = { },
             menuHandler = { networkClient.disconnect(); game.setScreen(LobbyScreen(game)) },
             camera = camera,
             soundPlayer = { soundManager?.play(it) },
-            stateSetter = { state = it; game.gameState = it; sendStateUpdate() },
+            stateSetter = { holder.state = it; game.gameState = it; sendStateUpdate() },
             resetMode = { resetMode() },
             infoLabelRef = { gameUI.infoLabel },
             statusLabelRef = { gameUI.statusLabel }
@@ -86,34 +72,17 @@ class NetworkGameScreen(
 
         gameInput = GameInput(
             game, camera, stage, tileSize,
-            stateProvider = { state },
-            stateSetter = { state = it; game.gameState = it; sendStateUpdate() },
-            selectedRegionProvider = { selectedRegion },
-            selectedRegionSetter = { selectedRegion = it },
-            selectedRegionsProvider = { selectedRegions },
-            actionUsedThisTurnProvider = { actionUsedThisTurn },
-            actionUsedThisTurnSetter = { actionUsedThisTurn = it },
-            attackModeProvider = { attackMode },
-            attackModeSetter = { attackMode = it },
-            attackSourceIdProvider = { attackSourceId },
-            attackSourceIdSetter = { attackSourceId = it },
-            moveModeProvider = { moveMode },
-            moveModeSetter = { moveMode = it },
-            moveSourceIdProvider = { moveSourceId },
-            moveSourceIdSetter = { moveSourceId = it },
-            aiPendingProvider = { aiPending },
+            holder = holder,
+            stateSetter = { holder.state = it; game.gameState = it; sendStateUpdate() },
             updateInfoLabel = { gameUI.updateInfoLabel() },
-            infoLabelSetter = { gameUI.infoLabel.setText(it) },
-            statusLabelSetter = { gameUI.statusLabel.setText(it) },
-            statusLabelColorSetter = { gameUI.statusLabel.color = it },
             soundPlayer = { soundManager?.play(it) },
             animProvider = { animManager },
             mapRenderer = mapRenderer
         )
         gameInput.setup()
 
-        val mapPixelW = state.map.width * tileSize
-        val mapPixelH = state.map.height * tileSize
+        val mapPixelW = holder.state.map.width * tileSize
+        val mapPixelH = holder.state.map.height * tileSize
         camera.position.set(mapPixelW / 2f, mapPixelH / 2f, 0f)
         camera.zoom = 1.2f
         camera.viewportWidth = Gdx.graphics.width.toFloat()
@@ -125,10 +94,7 @@ class NetworkGameScreen(
     }
 
     private fun resetMode() {
-        selectedRegion = null; selectedRegions.clear()
-        actionUsedThisTurn = false
-        attackMode = false; attackSourceId = -1
-        moveMode = false; moveSourceId = -1
+        holder.resetMode()
         gameInput.clearReachable()
         gameUI.updateInfoLabel()
     }
@@ -136,14 +102,14 @@ class NetworkGameScreen(
     private fun handleNetworkMessage(message: NetworkClient.ServerMessage) {
         when (message) {
             is NetworkClient.ServerMessage.TurnUpdate -> {
-                val turnResult = TurnManager.startTurn(state)
-                state = turnResult.state
-                game.gameState = state
-                actionUsedThisTurn = false
+                val turnResult = TurnManager.startTurn(holder.state)
+                holder.state = turnResult.state
+                game.gameState = holder.state
+                holder.actionUsedThisTurn = false
                 gameUI.updateInfoLabel()
             }
             is NetworkClient.ServerMessage.ActionApplied -> {
-                state = game.gameState
+                holder.state = game.gameState
                 gameUI.updateInfoLabel()
             }
             is NetworkClient.ServerMessage.Error -> {
@@ -155,9 +121,9 @@ class NetworkGameScreen(
                 gameUI.statusLabel.color = Color.ORANGE
             }
             is NetworkClient.ServerMessage.GameStarted -> {
-                val turnResult = TurnManager.startTurn(state)
-                state = turnResult.state
-                game.gameState = state
+                val turnResult = TurnManager.startTurn(holder.state)
+                holder.state = turnResult.state
+                game.gameState = holder.state
                 gameUI.updateInfoLabel()
             }
             else -> {}
@@ -166,63 +132,63 @@ class NetworkGameScreen(
 
     private fun sendStateUpdate() {
         if (networkClient.connected) {
-            networkClient.sendGameState(state, "EndTurn")
+            networkClient.sendGameState(holder.state, "EndTurn")
         }
     }
 
     private fun handleAction(actionType: String) {
         try {
             if (actionType == Actions.END_TURN) {
-                state = TurnManager.endTurn(state)
-                game.gameState = state; selectedRegion = null; selectedRegions.clear(); actionUsedThisTurn = false
-                attackMode = false; attackSourceId = -1; moveMode = false; moveSourceId = -1
+                holder.state = TurnManager.endTurn(holder.state)
+                game.gameState = holder.state
+                holder.resetOnEndTurn()
                 gameInput.clearReachable()
                 soundManager?.play(SoundManager.SoundType.END_TURN)
                 sendStateUpdate()
                 gameUI.updateInfoLabel()
                 return
             }
-            if (actionUsedThisTurn || gameOver) return
+            if (holder.actionUsedThisTurn || holder.gameOver) return
             if (actionType.startsWith("DIPLO_")) { handleDiploAction(actionType); return }
             if (actionType.startsWith(Actions.RESEARCH + ":")) {
-                val action = ActionQueue.GameAction(state.currentPlayerId, ActionQueue.ActionType.RESEARCH, 0, actionType.removePrefix(Actions.RESEARCH + ":"))
-                ActionQueue.DEFAULT.enqueue(action); state = ActionQueue.DEFAULT.processAll(state)
-                game.gameState = state; actionUsedThisTurn = true
+                val action = ActionQueue.GameAction(holder.state.currentPlayerId, ActionQueue.ActionType.RESEARCH, 0, actionType.removePrefix(Actions.RESEARCH + ":"))
+                ActionQueue.DEFAULT.enqueue(action); holder.state = ActionQueue.DEFAULT.processAll(holder.state)
+                game.gameState = holder.state; holder.actionUsedThisTurn = true
                 soundManager?.play(SoundManager.SoundType.RESEARCH)
-                networkClient.sendGameState(state, "ActionApplied")
+                networkClient.sendGameState(holder.state, "ActionApplied")
                 gameUI.updateInfoLabel()
                 return
             }
-            val region = selectedRegion
+            val region = holder.selectedRegion
             if (region == null) return
             if (actionType == Actions.ATTACK) {
-                if (region.ownerId != state.currentPlayerId) return
-                attackMode = true; attackSourceId = region.id
+                if (region.ownerId != holder.state.currentPlayerId) return
+                holder.attackMode = true; holder.attackSourceId = region.id
                 gameUI.infoLabel.setText("${Locale.ATTACK_MODE} ${region.name}")
                 return
             }
             if (actionType == Actions.MOVE) {
-                if (region.ownerId != state.currentPlayerId) return
-                moveMode = true; moveSourceId = region.id
+                if (region.ownerId != holder.state.currentPlayerId) return
+                holder.moveMode = true; holder.moveSourceId = region.id
                 gameInput.calculateReachable(region.id)
                 gameUI.infoLabel.setText("${Locale.MOVE_MODE} ${region.name}")
                 return
             }
             val action = when (actionType) {
-                Actions.BUILD_FARM -> ActionQueue.GameAction(state.currentPlayerId, ActionQueue.ActionType.BUILD, region.id, "FARM")
-                Actions.BUILD_LUMBER_MILL -> ActionQueue.GameAction(state.currentPlayerId, ActionQueue.ActionType.BUILD, region.id, "LUMBER_MILL")
-                Actions.BUILD_BARRACKS -> ActionQueue.GameAction(state.currentPlayerId, ActionQueue.ActionType.BUILD, region.id, "BARRACKS")
-                Actions.BUILD_MINE -> ActionQueue.GameAction(state.currentPlayerId, ActionQueue.ActionType.BUILD, region.id, "MINE")
-                Actions.RECRUIT -> ActionQueue.GameAction(state.currentPlayerId, ActionQueue.ActionType.RECRUIT, region.id)
-                Actions.RECRUIT_INFANTRY -> ActionQueue.GameAction(state.currentPlayerId, ActionQueue.ActionType.RECRUIT_INFANTRY, region.id)
-                Actions.RECRUIT_CAVALRY -> ActionQueue.GameAction(state.currentPlayerId, ActionQueue.ActionType.RECRUIT_CAVALRY, region.id)
-                Actions.RECRUIT_SIEGE -> ActionQueue.GameAction(state.currentPlayerId, ActionQueue.ActionType.RECRUIT_SIEGE, region.id)
-                Actions.DEVELOP -> ActionQueue.GameAction(state.currentPlayerId, ActionQueue.ActionType.DEVELOP, region.id)
+                Actions.BUILD_FARM -> ActionQueue.GameAction(holder.state.currentPlayerId, ActionQueue.ActionType.BUILD, region.id, "FARM")
+                Actions.BUILD_LUMBER_MILL -> ActionQueue.GameAction(holder.state.currentPlayerId, ActionQueue.ActionType.BUILD, region.id, "LUMBER_MILL")
+                Actions.BUILD_BARRACKS -> ActionQueue.GameAction(holder.state.currentPlayerId, ActionQueue.ActionType.BUILD, region.id, "BARRACKS")
+                Actions.BUILD_MINE -> ActionQueue.GameAction(holder.state.currentPlayerId, ActionQueue.ActionType.BUILD, region.id, "MINE")
+                Actions.RECRUIT -> ActionQueue.GameAction(holder.state.currentPlayerId, ActionQueue.ActionType.RECRUIT, region.id)
+                Actions.RECRUIT_INFANTRY -> ActionQueue.GameAction(holder.state.currentPlayerId, ActionQueue.ActionType.RECRUIT_INFANTRY, region.id)
+                Actions.RECRUIT_CAVALRY -> ActionQueue.GameAction(holder.state.currentPlayerId, ActionQueue.ActionType.RECRUIT_CAVALRY, region.id)
+                Actions.RECRUIT_SIEGE -> ActionQueue.GameAction(holder.state.currentPlayerId, ActionQueue.ActionType.RECRUIT_SIEGE, region.id)
+                Actions.DEVELOP -> ActionQueue.GameAction(holder.state.currentPlayerId, ActionQueue.ActionType.DEVELOP, region.id)
                 else -> return
             }
-            ActionQueue.DEFAULT.enqueue(action); state = ActionQueue.DEFAULT.processAll(state)
-            game.gameState = state; selectedRegion = state.map.getRegionById(region.id); actionUsedThisTurn = true
-            networkClient.sendGameState(state, "ActionApplied")
+            ActionQueue.DEFAULT.enqueue(action); holder.state = ActionQueue.DEFAULT.processAll(holder.state)
+            game.gameState = holder.state; holder.selectedRegion = holder.state.map.getRegionById(region.id); holder.actionUsedThisTurn = true
+            networkClient.sendGameState(holder.state, "ActionApplied")
             gameUI.updateInfoLabel()
         } catch (e: Exception) {
             Gdx.app.error("NetworkGameScreen", "Action error: ${e.message}")
@@ -230,18 +196,18 @@ class NetworkGameScreen(
     }
 
     private fun handleDiploAction(actionType: String) {
-        if (actionUsedThisTurn) return
+        if (holder.actionUsedThisTurn) return
         val action = when (actionType) {
-            Actions.DIPLO_ALLIANCE -> ActionQueue.GameAction(state.currentPlayerId, ActionQueue.ActionType.PROPOSE_ALLIANCE, 1)
-            Actions.DIPLO_BREAK -> ActionQueue.GameAction(state.currentPlayerId, ActionQueue.ActionType.BREAK_ALLIANCE, 1)
-            Actions.DIPLO_TRADE -> ActionQueue.GameAction(state.currentPlayerId, ActionQueue.ActionType.PROPOSE_TRADE, 1)
-            Actions.DIPLO_CANCEL_TRADE -> ActionQueue.GameAction(state.currentPlayerId, ActionQueue.ActionType.CANCEL_TRADE, 1)
+            Actions.DIPLO_ALLIANCE -> ActionQueue.GameAction(holder.state.currentPlayerId, ActionQueue.ActionType.PROPOSE_ALLIANCE, 1)
+            Actions.DIPLO_BREAK -> ActionQueue.GameAction(holder.state.currentPlayerId, ActionQueue.ActionType.BREAK_ALLIANCE, 1)
+            Actions.DIPLO_TRADE -> ActionQueue.GameAction(holder.state.currentPlayerId, ActionQueue.ActionType.PROPOSE_TRADE, 1)
+            Actions.DIPLO_CANCEL_TRADE -> ActionQueue.GameAction(holder.state.currentPlayerId, ActionQueue.ActionType.CANCEL_TRADE, 1)
             else -> return
         }
-        ActionQueue.DEFAULT.enqueue(action); state = ActionQueue.DEFAULT.processAll(state)
-        game.gameState = state; actionUsedThisTurn = true
+        ActionQueue.DEFAULT.enqueue(action); holder.state = ActionQueue.DEFAULT.processAll(holder.state)
+        game.gameState = holder.state; holder.actionUsedThisTurn = true
         soundManager?.play(SoundManager.SoundType.ALLIANCE)
-        networkClient.sendGameState(state, "ActionApplied")
+        networkClient.sendGameState(holder.state, "ActionApplied")
         gameUI.updateInfoLabel()
     }
 
@@ -256,7 +222,7 @@ class NetworkGameScreen(
             gameUI.update(delta)
             gameUI.updateEvent(delta)
 
-            mapRenderer.drawTiles(state, animTime, actionUsedThisTurn, selectedRegions, gameInput.reachableRegions)
+            mapRenderer.drawTiles(holder.state, animTime, holder.actionUsedThisTurn, holder.selectedRegions, gameInput.reachableRegions)
             mapRenderer.drawSelectionBox(gameInput.isBoxSelecting, gameInput.boxStartScreenX, gameInput.boxStartScreenY)
 
             animManager.update(delta)
@@ -268,7 +234,7 @@ class NetworkGameScreen(
             stage.act(delta); stage.draw()
 
             game.batch.begin()
-            val player = state.currentPlayer()
+            val player = holder.state.currentPlayer()
             val resText = "Food: ${player?.resources?.food ?: 0}   Wood: ${player?.resources?.wood ?: 0}   Stone: ${player?.resources?.stone ?: 0}   Gold: ${player?.resources?.gold ?: 0}   Iron: ${player?.resources?.iron ?: 0}"
             val resLayout = GlyphLayout(game.font, resText)
             game.font.color = Color.WHITE
