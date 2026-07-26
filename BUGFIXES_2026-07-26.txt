@@ -1,0 +1,88 @@
+2026-07-26 — Bug Fixes and Improvements
+=========================================
+
+BUG FIXES
+---------
+
+1. ActionQueue Thread Safety (common/logic/ActionQueue.kt)
+   - Добавлены аннотации @Synchronized к методам enqueue(), processAll() и clear()
+   - Проблема: pendingActions — разделяемый изменяемый список, доступный из разных потоков
+     (фоновый поток AI + GL-поток). Без синхронизации возможны race conditions,
+     приводящие к ConcurrentModificationException или потере действий.
+
+2. UnitStack.split() Dead Code (common/model/Unit.kt)
+   - Удалён дублирующийся блок кода — обе ветки if (half) делали одно и то же
+   - Проблема: параметр half был бессмысленным; оба пути выполняли одинаковую логику.
+
+3. Camera Panning Bug (desktop/GameScreen.kt, desktop/GameInput.kt)
+   - Исправлен метод render(), где camera.translate(Gdx.input.x - Gdx.input.x, ...) всегда
+     вычислял 0
+   - Добавлен метод cancelPanning() в GameInput
+   - Проблема: панорамирование было молча сломано — камера никогда не двигалась при
+     перетаскивании правой кнопкой мыши в цикле рендера.
+
+4. Unsafe player!! (desktop/GameScreen.kt)
+   - Заменено player!! на безопасный val player = state.currentPlayer() ?: return
+   - Проблема: мог привести к NPE, если состояние игры было неконсистентным.
+
+CODE QUALITY
+------------
+
+5. Извлечение SkinFactory (desktop/SkinFactory.kt — НОВЫЙ ФАЙЛ)
+   - Создана общая SkinFactory с методами createSkin(), generateFont(), makeTrashIcon()
+   - Обновлены GameScreen, MenuScreen, NetworkGameScreen, LobbyScreen
+   - Проблема: ~300 строк одинакового кода были скопированы в 4 класса экранов.
+
+6. GameMap O(1) Lookup (common/model/GameMap.kt)
+   - Добавлен lazy-индекс regionById для getRegionById() (было O(n) через find())
+   - Проблема: getRegionById вызывается при каждом действии, каждом кадре — O(1) вместо O(n).
+
+7. Исправление имени функции (desktop/TilesetGenerator.kt)
+   - pix像素ToBytes переименовано в pixmapToBytes (были смешаны китайские символы).
+
+LOCALIZATION
+------------
+
+8. Локализация кнопок дипломатии (desktop/Locale.kt, desktop/GameScreen.kt)
+   - Заменены захардкоженные "Alliance", "Break", "Trade", "Cancel" на Locale.DIPLO_ALLIANCE и т.д.
+   - Поддержка EN/RU/DE.
+
+9. Локализация экрана лобби (desktop/Locale.kt, desktop/LobbyScreen.kt)
+   - Добавлено 17 новых строк локализации: SERVER_URL, YOUR_NAME, CREATE_ROOM, JOIN_ROOM,
+     BACK, JOIN, ROOM_ID, CONNECTING, CONNECTED, CONNECTION_FAILED, WAITING_FOR_OPPONENT,
+     ROOM_CREATED, JOINING_ROOM, JOINED_ROOM, CONNECTING_TO_GAME, WAITING_FOR_OPPONENT_JOIN,
+     ERROR, OPPONENT_DISCONNECTED
+   - Обновлены все захардкоженные строки в LobbyScreen и NetworkGameScreen.
+
+AI IMPROVEMENTS
+---------------
+
+10. Умный Fallback AI (common/ai/OllamaAI.kt)
+    - Добавлен набор юнитов (кавалерия, осада) в зависимости от боевых потребностей
+    - Добавлено строительство MARKET при нехватке золота
+    - Добавлено исследование технологий (AI теперь изучает techs, если может оплатить)
+    - Добавлена логика атаки — AI атакует при военном преимуществе
+    - Добавлен хелпер strongEnemyCanWin() для оценки боя
+
+11. Улучшенный LLM-промпт (common/ai/OllamaAI.kt)
+    - Добавлена информация об инвентаре юнитов
+    - Добавлены исследованные и доступные технологии
+    - Добавлены действия BUILD_LUMBER_MILL, RECRUIT_INFANTRY/CAVALRY/SIEGE, ATTACK, RESEARCH
+    - Обновлён парсер для обработки всех новых типов действий.
+
+TESTING
+-------
+
+12. Новый тестовый файл (common/ImprovementsTest.kt — НОВЫЙ ФАЙЛ)
+    - 14 новых тестов, покрывающих:
+      - Индексированный поиск GameMap, соседи, замена
+      - Поведение AI fallback (создаёт действие, возвращает null для человека)
+      - UnitStack split (чётный/нечётный)
+      - Дипломатия: альянс, торговля, разрыв
+      - Предпосылки технологий
+      - Доход от торговли между союзниками
+      - Экономика с технологией сельского хозяйства
+      - Бой с юнитами и стенами
+      - Исследование тумана войны
+      - Бонусы сложности
+    - Все 80 тестов проходят.
