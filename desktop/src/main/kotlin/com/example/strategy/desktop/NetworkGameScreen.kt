@@ -5,7 +5,6 @@ import com.badlogic.gdx.ScreenAdapter
 import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.graphics.GL20
 import com.badlogic.gdx.graphics.OrthographicCamera
-import com.badlogic.gdx.graphics.g2d.BitmapFont
 import com.badlogic.gdx.graphics.g2d.GlyphLayout
 import com.badlogic.gdx.graphics.g2d.SpriteBatch
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer
@@ -15,15 +14,11 @@ import com.badlogic.gdx.scenes.scene2d.ui.Label
 import com.badlogic.gdx.scenes.scene2d.ui.Skin
 import com.badlogic.gdx.scenes.scene2d.ui.Table
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton
-import com.badlogic.gdx.scenes.scene2d.ui.Window
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener
-import com.badlogic.gdx.scenes.scene2d.utils.NinePatchDrawable
 import com.badlogic.gdx.utils.viewport.ScreenViewport
 import com.example.strategy.model.*
 import com.example.strategy.logic.ActionQueue
-import com.example.strategy.logic.Economy
 import com.example.strategy.logic.TurnManager
-import java.io.File
 
 class NetworkGameScreen(
     private val game: StrategyGame,
@@ -134,11 +129,11 @@ class NetworkGameScreen(
                 updateInfoLabel()
             }
             is NetworkClient.ServerMessage.Error -> {
-                statusLabel.setText("Error: ${message.message}")
+                statusLabel.setText("${Locale.ERROR} ${message.message}")
                 statusLabel.color = Color.RED
             }
             is NetworkClient.ServerMessage.OpponentDisconnected -> {
-                statusLabel.setText("Opponent disconnected!")
+                statusLabel.setText(Locale.OPPONENT_DISCONNECTED)
                 statusLabel.color = Color.ORANGE
             }
             is NetworkClient.ServerMessage.GameStarted -> {
@@ -238,7 +233,7 @@ class NetworkGameScreen(
         } else if (!state.fog.isExplored(myPlayerId, r.id)) {
             infoLabel.setText(Locale.UNKNOWN_TERRITORY)
         } else {
-            val owner = when (r.ownerId) { 0 -> "You"; 1 -> "Enemy"; else -> "Neutral" }
+            val owner = when (r.ownerId) { myPlayerId -> Locale.YOURS; null -> Locale.NEUTRAL; else -> Locale.ENEMY }
             val buildings = if (r.buildings.isEmpty()) Locale.NO_BUILDINGS else r.buildings.joinToString { it.type.name }
             val attack = r.population + r.units.totalAttack()
             val defense = r.population + r.units.totalDefense() + r.buildings.count { it.type == BuildingType.WALL } * 5
@@ -374,34 +369,5 @@ class NetworkGameScreen(
     override fun resize(width: Int, height: Int) { camera.viewportWidth = width.toFloat(); camera.viewportHeight = height.toFloat(); camera.update(); stage.viewport.update(width, height, true) }
     override fun dispose() { batch.dispose(); shapeRenderer.dispose(); soundManager?.dispose(); mapRenderer.dispose(); stage.dispose(); skin.dispose() }
 
-    private fun createSkin(): Skin {
-        val s = Skin()
-        val font = generateFont()
-        s.add("default-font", font, BitmapFont::class.java)
-        val upPix = com.badlogic.gdx.graphics.Pixmap(4, 4, com.badlogic.gdx.graphics.Pixmap.Format.RGBA8888).apply { setColor(Color(0.25f, 0.25f, 0.3f, 0.9f)); fill() }
-        val downPix = com.badlogic.gdx.graphics.Pixmap(4, 4, com.badlogic.gdx.graphics.Pixmap.Format.RGBA8888).apply { setColor(Color(0.35f, 0.35f, 0.4f, 1f)); fill() }
-        val overPix = com.badlogic.gdx.graphics.Pixmap(4, 4, com.badlogic.gdx.graphics.Pixmap.Format.RGBA8888).apply { setColor(Color(0.3f, 0.3f, 0.35f, 1f)); fill() }
-        val upTex = com.badlogic.gdx.graphics.Texture(upPix); upPix.dispose()
-        val downTex = com.badlogic.gdx.graphics.Texture(downPix); downPix.dispose()
-        val overTex = com.badlogic.gdx.graphics.Texture(overPix); overPix.dispose()
-        s.add("default", TextButton.TextButtonStyle().apply { this.font = font; fontColor = Color.WHITE; up = NinePatchDrawable(com.badlogic.gdx.graphics.g2d.NinePatch(upTex, 2, 2, 2, 2)); down = NinePatchDrawable(com.badlogic.gdx.graphics.g2d.NinePatch(downTex, 2, 2, 2, 2)); over = NinePatchDrawable(com.badlogic.gdx.graphics.g2d.NinePatch(overTex, 2, 2, 2, 2)) })
-        s.add("default", Label.LabelStyle(font, Color.WHITE))
-        val windowBgPix = com.badlogic.gdx.graphics.Pixmap(32, 32, com.badlogic.gdx.graphics.Pixmap.Format.RGBA8888).apply { setColor(0.08f, 0.09f, 0.14f, 1f); fill() }
-        val windowBgTex = com.badlogic.gdx.graphics.Texture(windowBgPix); windowBgPix.dispose()
-        val windowBg = NinePatchDrawable(com.badlogic.gdx.graphics.g2d.NinePatch(windowBgTex, 4, 4, 4, 4))
-        s.add("default", Window.WindowStyle(font, Color.CYAN, windowBg))
-        s.add("default", com.badlogic.gdx.scenes.scene2d.ui.TextField.TextFieldStyle().apply { this.font = font; fontColor = Color.WHITE; background = windowBg; cursor = NinePatchDrawable(com.badlogic.gdx.graphics.g2d.NinePatch(upTex, 1, 1, 1, 1)); selection = NinePatchDrawable(com.badlogic.gdx.graphics.g2d.NinePatch(upTex, 1, 1, 1, 1)) })
-        return s
-    }
-
-    private fun generateFont(): BitmapFont {
-        val fontPaths = arrayOf("/System/Library/Fonts/Supplemental/Arial.ttf", "/System/Library/Fonts/Helvetica.ttc", "/Library/Fonts/Arial.ttf")
-        var generator: com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator? = null
-        for (path in fontPaths) { if (File(path).exists()) { generator = com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator(Gdx.files.absolute(path)); break } }
-        if (generator == null) generator = com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator(Gdx.files.absolute(fontPaths[0]))
-        val params = com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator.FreeTypeFontParameter()
-        params.size = 16; params.minFilter = com.badlogic.gdx.graphics.Texture.TextureFilter.Linear; params.magFilter = com.badlogic.gdx.graphics.Texture.TextureFilter.Linear
-        params.characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.,*':?!@#$%&()-+=/<>" + "абвгдеёжзийклмнопрстуфхцчшщъыьэюяАБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ" + "äöüÄÖÜß «»—…"
-        val font = generator.generateFont(params); generator.dispose(); return font
-    }
+    private fun createSkin(): Skin = SkinFactory.createSkin()
 }

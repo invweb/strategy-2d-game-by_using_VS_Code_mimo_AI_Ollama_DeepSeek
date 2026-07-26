@@ -169,6 +169,10 @@ class GameInput(
         Gdx.input.inputProcessor = InputMultiplexer(stage, mapInput)
     }
 
+    fun cancelPanning() {
+        isPanning = false
+    }
+
     private fun selectRegionsInBox() {
         val sx1 = minOf(boxStartScreenX.toFloat(), Gdx.input.x.toFloat())
         val sy1 = minOf(boxStartScreenY.toFloat(), Gdx.input.y.toFloat())

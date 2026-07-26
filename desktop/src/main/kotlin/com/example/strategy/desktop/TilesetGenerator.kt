@@ -77,13 +77,13 @@ object TilesetGenerator {
             pix.fillCircle(TILE_SIZE * 4 + 4 + i * 8, TILE_SIZE / 2 + (i % 2) * 4 - 2, 3)
         }
 
-        val bytes = pix像素ToBytes(pix)
+        val bytes = pixmapToBytes(pix)
         file.writeBytes(bytes)
         pix.dispose()
     }
 
     // Convert Pixmap to PNG bytes
-    private fun pix像素ToBytes(pix: Pixmap): ByteArray {
+    private fun pixmapToBytes(pix: Pixmap): ByteArray {
         // Use Pixmap IO — write to a temp buffer via libGDX
         val buf = java.io.ByteArrayOutputStream()
         // libGDX Pixmap doesn't have direct PNG encode in pure Java

@@ -12,11 +12,15 @@ data class GameMap(
         regions.associateBy { it.tileX to it.tileY }
     }
 
+    private val regionById: Map<Int, Region> by lazy {
+        regions.associateBy { it.id }
+    }
+
     fun getRegionAt(tileX: Int, tileY: Int): Region? =
         regionByTile[tileX to tileY]
 
     fun getRegionById(id: Int): Region? =
-        regions.find { it.id == id }
+        regionById[id]
 
     fun getNeighbors(region: Region): List<Region> {
         val directions = listOf(

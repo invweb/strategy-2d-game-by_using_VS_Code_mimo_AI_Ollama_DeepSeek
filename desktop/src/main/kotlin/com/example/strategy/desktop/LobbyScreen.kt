@@ -13,9 +13,7 @@ import com.badlogic.gdx.scenes.scene2d.ui.TextButton
 import com.badlogic.gdx.scenes.scene2d.ui.TextField
 import com.badlogic.gdx.scenes.scene2d.ui.Window
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener
-import com.badlogic.gdx.scenes.scene2d.utils.NinePatchDrawable
 import com.badlogic.gdx.utils.viewport.ScreenViewport
-import java.io.File
 
 class LobbyScreen(private val game: StrategyGame) : ScreenAdapter() {
 
@@ -30,13 +28,13 @@ class LobbyScreen(private val game: StrategyGame) : ScreenAdapter() {
 
     override fun show() {
         Locale.load()
-        skin = createSkin()
+        skin = SkinFactory.createSkin()
         stage = Stage(ScreenViewport())
         Gdx.input.inputProcessor = stage
 
         val root = Table(skin).apply { setFillParent(true) }
 
-        val title = Label("MULTIPLAYER", skin)
+        val title = Label(Locale.MULTIPLAYER, skin)
         title.setFontScale(2.5f)
         title.color = Color(0.9f, 0.8f, 0.2f, 1f)
         root.add(title).padBottom(30f).row()
@@ -47,7 +45,7 @@ class LobbyScreen(private val game: StrategyGame) : ScreenAdapter() {
 
         val configPanel = Table(skin).apply { defaults().pad(5f) }
 
-        val serverLabel = Label("Server URL:", skin)
+        val serverLabel = Label(Locale.SERVER_URL, skin)
         serverLabel.color = Color.CYAN
         configPanel.add(serverLabel)
         val serverField = TextField("localhost:8080", skin)
@@ -58,7 +56,7 @@ class LobbyScreen(private val game: StrategyGame) : ScreenAdapter() {
         })
         configPanel.add(serverField).width(250f).row()
 
-        val nameLabel = Label("Your name:", skin)
+        val nameLabel = Label(Locale.YOUR_NAME, skin)
         nameLabel.color = Color.CYAN
         configPanel.add(nameLabel)
         val nameField = TextField("Player", skin)
@@ -73,7 +71,7 @@ class LobbyScreen(private val game: StrategyGame) : ScreenAdapter() {
 
         val btnPanel = Table(skin).apply { defaults().pad(8f) }
 
-        val createBtn = TextButton("CREATE ROOM", skin)
+        val createBtn = TextButton(Locale.CREATE_ROOM, skin)
         createBtn.label.setFontScale(1.0f)
         createBtn.color = Color(0.3f, 0.6f, 0.3f, 1f)
         createBtn.addListener(object : ClickListener() {
@@ -85,7 +83,7 @@ class LobbyScreen(private val game: StrategyGame) : ScreenAdapter() {
         })
         btnPanel.add(createBtn).width(200f).height(50f).row()
 
-        val joinBtn = TextButton("JOIN ROOM", skin)
+        val joinBtn = TextButton(Locale.JOIN_ROOM, skin)
         joinBtn.label.setFontScale(1.0f)
         joinBtn.color = Color(0.3f, 0.5f, 0.7f, 1f)
         joinBtn.addListener(object : ClickListener() {
@@ -105,7 +103,7 @@ class LobbyScreen(private val game: StrategyGame) : ScreenAdapter() {
         roomIdLabel!!.color = Color.CYAN
         root.add(roomIdLabel).padBottom(20f).row()
 
-        val backBtn = TextButton("BACK", skin)
+        val backBtn = TextButton(Locale.BACK, skin)
         backBtn.label.setFontScale(0.9f)
         backBtn.addListener(object : ClickListener() {
             override fun clicked(event: InputEvent?, x: Float, y: Float) {
@@ -121,7 +119,7 @@ class LobbyScreen(private val game: StrategyGame) : ScreenAdapter() {
     private fun connectAndCreateRoom() {
         networkClient?.disconnect()
         networkClient = NetworkClient { message -> handleServerMessage(message) }
-        statusLabel?.setText("Connecting to $serverUrl...")
+        statusLabel?.setText("${Locale.CONNECTING} $serverUrl...")
         statusLabel?.color = Color.LIGHT_GRAY
 
         networkClient!!.connect(serverUrl)
@@ -135,12 +133,12 @@ class LobbyScreen(private val game: StrategyGame) : ScreenAdapter() {
             }
             if (networkClient!!.connected) {
                 Gdx.app.postRunnable {
-                    statusLabel?.setText("Connected! Creating room...")
+                    statusLabel?.setText(Locale.CONNECTED)
                     networkClient!!.sendJson("CreateRoom", "playerName" to playerName)
                 }
             } else {
                 Gdx.app.postRunnable {
-                    statusLabel?.setText("Connection failed!")
+                    statusLabel?.setText(Locale.CONNECTION_FAILED)
                     statusLabel?.color = Color.RED
                 }
             }
@@ -148,16 +146,16 @@ class LobbyScreen(private val game: StrategyGame) : ScreenAdapter() {
     }
 
     private fun showJoinDialog() {
-        val win = Window("Join Room", skin)
+        val win = Window(Locale.JOIN_ROOM, skin)
         win.isModal = true; win.isMovable = true; win.pad(16f)
 
-        val idLabel = Label("Room ID:", skin)
+        val idLabel = Label(Locale.ROOM_ID, skin)
         idLabel.color = Color.CYAN
         win.add(idLabel)
         val idField = TextField("", skin)
         win.add(idField).width(200f).row()
 
-        val joinBtn = TextButton("JOIN", skin)
+        val joinBtn = TextButton(Locale.JOIN, skin)
         joinBtn.label.setFontScale(0.9f)
         joinBtn.addListener(object : ClickListener() {
             override fun clicked(event: InputEvent?, x: Float, y: Float) {
@@ -185,7 +183,7 @@ class LobbyScreen(private val game: StrategyGame) : ScreenAdapter() {
     private fun connectAndJoinRoom(roomId: String) {
         networkClient?.disconnect()
         networkClient = NetworkClient { message -> handleServerMessage(message) }
-        statusLabel?.setText("Connecting to $serverUrl...")
+        statusLabel?.setText("${Locale.CONNECTING} $serverUrl...")
         networkClient!!.connect(serverUrl)
 
         Thread {
@@ -201,7 +199,7 @@ class LobbyScreen(private val game: StrategyGame) : ScreenAdapter() {
                 }
             } else {
                 Gdx.app.postRunnable {
-                    statusLabel?.setText("Connection failed!")
+                    statusLabel?.setText(Locale.CONNECTION_FAILED)
                     statusLabel?.color = Color.RED
                 }
             }
@@ -211,25 +209,25 @@ class LobbyScreen(private val game: StrategyGame) : ScreenAdapter() {
     private fun handleServerMessage(message: NetworkClient.ServerMessage) {
         when (message) {
             is NetworkClient.ServerMessage.RoomCreated -> {
-                statusLabel?.setText("Room created!")
+                statusLabel?.setText(Locale.ROOM_CREATED)
                 statusLabel?.color = Color.GREEN
                 roomIdLabel?.setText("Room ID: ${message.roomId}")
-                waitingLabel?.setText("Waiting for opponent...")
+                waitingLabel?.setText(Locale.WAITING_FOR_OPPONENT)
             }
             is NetworkClient.ServerMessage.RoomJoined -> {
-                statusLabel?.setText("Joined room ${message.roomId}")
+                statusLabel?.setText("${Locale.JOINED_ROOM} ${message.roomId}")
                 statusLabel?.color = Color.GREEN
-                waitingLabel?.setText("Connecting to game...")
+                waitingLabel?.setText(Locale.CONNECTING_TO_GAME)
             }
             is NetworkClient.ServerMessage.WaitingForPlayer -> {
-                waitingLabel?.setText("Waiting for opponent to join...")
+                waitingLabel?.setText(Locale.WAITING_FOR_OPPONENT_JOIN)
                 waitingLabel?.color = Color.YELLOW
             }
             is NetworkClient.ServerMessage.GameStarted -> {
                 game.setScreen(NetworkGameScreen(game, networkClient!!, message.yourPlayerId))
             }
             is NetworkClient.ServerMessage.Error -> {
-                statusLabel?.setText("Error: ${message.message}")
+                statusLabel?.setText("${Locale.ERROR} ${message.message}")
                 statusLabel?.color = Color.RED
             }
             else -> {}
@@ -251,36 +249,5 @@ class LobbyScreen(private val game: StrategyGame) : ScreenAdapter() {
         networkClient?.dispose()
         stage.dispose()
         skin.dispose()
-    }
-
-    private fun createSkin(): Skin {
-        val s = Skin()
-        val font = generateFont()
-        s.add("default-font", font, com.badlogic.gdx.graphics.g2d.BitmapFont::class.java)
-        val upPix = com.badlogic.gdx.graphics.Pixmap(4, 4, com.badlogic.gdx.graphics.Pixmap.Format.RGBA8888).apply { setColor(Color(0.2f, 0.2f, 0.25f, 1f)); fill() }
-        val downPix = com.badlogic.gdx.graphics.Pixmap(4, 4, com.badlogic.gdx.graphics.Pixmap.Format.RGBA8888).apply { setColor(Color(0.3f, 0.3f, 0.35f, 1f)); fill() }
-        val overPix = com.badlogic.gdx.graphics.Pixmap(4, 4, com.badlogic.gdx.graphics.Pixmap.Format.RGBA8888).apply { setColor(Color(0.25f, 0.25f, 0.3f, 1f)); fill() }
-        val upTex = com.badlogic.gdx.graphics.Texture(upPix); upPix.dispose()
-        val downTex = com.badlogic.gdx.graphics.Texture(downPix); downPix.dispose()
-        val overTex = com.badlogic.gdx.graphics.Texture(overPix); overPix.dispose()
-        s.add("default", TextButton.TextButtonStyle().apply { this.font = font; fontColor = Color.WHITE; up = NinePatchDrawable(com.badlogic.gdx.graphics.g2d.NinePatch(upTex, 2, 2, 2, 2)); down = NinePatchDrawable(com.badlogic.gdx.graphics.g2d.NinePatch(downTex, 2, 2, 2, 2)); over = NinePatchDrawable(com.badlogic.gdx.graphics.g2d.NinePatch(overTex, 2, 2, 2, 2)) })
-        s.add("default", Label.LabelStyle(font, Color.WHITE))
-        val windowBgPix = com.badlogic.gdx.graphics.Pixmap(32, 32, com.badlogic.gdx.graphics.Pixmap.Format.RGBA8888).apply { setColor(0.08f, 0.09f, 0.14f, 1f); fill() }
-        val windowBgTex = com.badlogic.gdx.graphics.Texture(windowBgPix); windowBgPix.dispose()
-        val windowBg = NinePatchDrawable(com.badlogic.gdx.graphics.g2d.NinePatch(windowBgTex, 4, 4, 4, 4))
-        s.add("default", Window.WindowStyle(font, Color.CYAN, windowBg))
-        s.add("default", TextField.TextFieldStyle().apply { this.font = font; fontColor = Color.WHITE; background = windowBg; cursor = NinePatchDrawable(com.badlogic.gdx.graphics.g2d.NinePatch(upTex, 1, 1, 1, 1)); selection = NinePatchDrawable(com.badlogic.gdx.graphics.g2d.NinePatch(upTex, 1, 1, 1, 1)) })
-        return s
-    }
-
-    private fun generateFont(): com.badlogic.gdx.graphics.g2d.BitmapFont {
-        val fontPaths = arrayOf("/System/Library/Fonts/Supplemental/Arial.ttf", "/System/Library/Fonts/Helvetica.ttc", "/Library/Fonts/Arial.ttf")
-        var generator: com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator? = null
-        for (path in fontPaths) { if (File(path).exists()) { generator = com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator(Gdx.files.absolute(path)); break } }
-        if (generator == null) generator = com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator(Gdx.files.absolute(fontPaths[0]))
-        val params = com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator.FreeTypeFontParameter()
-        params.size = 16; params.minFilter = com.badlogic.gdx.graphics.Texture.TextureFilter.Linear; params.magFilter = com.badlogic.gdx.graphics.Texture.TextureFilter.Linear
-        params.characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.,*':?!@#$%&()-+=/<>" + "абвгдеёжзийклмнопрстуфхцчшщъыьэюяАБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ" + "äöüÄÖÜß «»—…"
-        val font = generator.generateFont(params); generator.dispose(); return font
     }
 }

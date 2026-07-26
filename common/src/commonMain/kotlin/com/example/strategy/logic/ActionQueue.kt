@@ -3,7 +3,6 @@ package com.example.strategy.logic
 import com.example.strategy.model.GameState
 import com.example.strategy.model.UnitType
 
-// Action queue — buffers player actions during a turn
 object ActionQueue {
 
     data class GameAction(
@@ -31,13 +30,17 @@ object ActionQueue {
 
     private val pendingActions: MutableList<GameAction> = mutableListOf()
 
+    @Synchronized
     fun enqueue(action: GameAction) {
         pendingActions.add(action)
     }
 
+    @Synchronized
     fun processAll(gameState: GameState): GameState {
+        val actions = pendingActions.toList()
+        pendingActions.clear()
         var state = gameState
-        for (action in pendingActions) {
+        for (action in actions) {
             state = when (action.type) {
                 ActionType.BUILD -> GameRules.processBuild(state, action)
                 ActionType.RECRUIT -> GameRules.processRecruit(state, action)
@@ -54,10 +57,10 @@ object ActionQueue {
                 ActionType.RECRUIT_SIEGE -> GameRules.processRecruitUnit(state, action, UnitType.SIEGE)
             }
         }
-        pendingActions.clear()
         return state
     }
 
+    @Synchronized
     fun clear() {
         pendingActions.clear()
     }

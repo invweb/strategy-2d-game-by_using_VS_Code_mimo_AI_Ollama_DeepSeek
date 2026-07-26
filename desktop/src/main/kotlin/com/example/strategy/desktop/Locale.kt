@@ -506,4 +506,72 @@ object Locale {
     val MULTIPLAYER get() = when(current) {
         Lang.RU -> "СЕТЕВАЯ ИГРА"; Lang.DE -> "NETZWERKSPIEL"; Lang.EN -> "MULTIPLAYER"
     }
+
+    val DIPLO_ALLIANCE get() = when(current) {
+        Lang.RU -> "Союз"; Lang.DE -> "Bündnis"; Lang.EN -> "Alliance"
+    }
+    val DIPLO_BREAK get() = when(current) {
+        Lang.RU -> "Разрыв"; Lang.DE -> "Brechen"; Lang.EN -> "Break"
+    }
+    val DIPLO_TRADE get() = when(current) {
+        Lang.RU -> "Торговля"; Lang.DE -> "Handel"; Lang.EN -> "Trade"
+    }
+    val DIPLO_CANCEL_TRADE get() = when(current) {
+        Lang.RU -> "Отмена"; Lang.DE -> "Abbrechen"; Lang.EN -> "Cancel"
+    }
+
+    val SERVER_URL get() = when(current) {
+        Lang.RU -> "URL сервера:"; Lang.DE -> "Server-URL:"; Lang.EN -> "Server URL:"
+    }
+    val YOUR_NAME get() = when(current) {
+        Lang.RU -> "Ваше имя:"; Lang.DE -> "Ihr Name:"; Lang.EN -> "Your name:"
+    }
+    val CREATE_ROOM get() = when(current) {
+        Lang.RU -> "СОЗДАТЬ КОМНАТУ"; Lang.DE -> "RAUM ERSTELLEN"; Lang.EN -> "CREATE ROOM"
+    }
+    val JOIN_ROOM get() = when(current) {
+        Lang.RU -> "ВОЙТИ В КОМНАТУ"; Lang.DE -> "RAUM BEITRETEN"; Lang.EN -> "JOIN ROOM"
+    }
+    val BACK get() = when(current) {
+        Lang.RU -> "НАЗАД"; Lang.DE -> "ZURÜCK"; Lang.EN -> "BACK"
+    }
+    val JOIN get() = when(current) {
+        Lang.RU -> "ВОЙТИ"; Lang.DE -> "BEITRETEN"; Lang.EN -> "JOIN"
+    }
+    val ROOM_ID get() = when(current) {
+        Lang.RU -> "ID комнаты:"; Lang.DE -> "Raum-ID:"; Lang.EN -> "Room ID:"
+    }
+    val CONNECTING get() = when(current) {
+        Lang.RU -> "Подключение к"; Lang.DE -> "Verbindung zu"; Lang.EN -> "Connecting to"
+    }
+    val CONNECTED get() = when(current) {
+        Lang.RU -> "Подключено! Создание комнаты..."; Lang.DE -> "Verbunden! Raum wird erstellt..."; Lang.EN -> "Connected! Creating room..."
+    }
+    val CONNECTION_FAILED get() = when(current) {
+        Lang.RU -> "Ошибка подключения!"; Lang.DE -> "Verbindung fehlgeschlagen!"; Lang.EN -> "Connection failed!"
+    }
+    val WAITING_FOR_OPPONENT get() = when(current) {
+        Lang.RU -> "Ожидание противника..."; Lang.DE -> "Warte auf Gegner..."; Lang.EN -> "Waiting for opponent..."
+    }
+    val ROOM_CREATED get() = when(current) {
+        Lang.RU -> "Комната создана!"; Lang.DE -> "Raum erstellt!"; Lang.EN -> "Room created!"
+    }
+    val JOINING_ROOM get() = when(current) {
+        Lang.RU -> "Вход в комнату..."; Lang.DE -> "Raum wird betreten..."; Lang.EN -> "Joining room..."
+    }
+    val JOINED_ROOM get() = when(current) {
+        Lang.RU -> "Вошли в комнату"; Lang.DE -> "Raum beigetreten"; Lang.EN -> "Joined room"
+    }
+    val CONNECTING_TO_GAME get() = when(current) {
+        Lang.RU -> "Подключение к игре..."; Lang.DE -> "Verbindung zum Spiel..."; Lang.EN -> "Connecting to game..."
+    }
+    val WAITING_FOR_OPPONENT_JOIN get() = when(current) {
+        Lang.RU -> "Ожидание противника..."; Lang.DE -> "Warte auf Gegner..."; Lang.EN -> "Waiting for opponent to join..."
+    }
+    val ERROR get() = when(current) {
+        Lang.RU -> "Ошибка:"; Lang.DE -> "Fehler:"; Lang.EN -> "Error:"
+    }
+    val OPPONENT_DISCONNECTED get() = when(current) {
+        Lang.RU -> "Противник отключился!"; Lang.DE -> "Gegner getrennt!"; Lang.EN -> "Opponent disconnected!"
+    }
 }

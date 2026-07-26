@@ -5,8 +5,6 @@ import com.badlogic.gdx.ScreenAdapter
 import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.graphics.GL20
 import com.badlogic.gdx.graphics.OrthographicCamera
-import com.badlogic.gdx.graphics.Pixmap
-import com.badlogic.gdx.graphics.Texture
 import com.badlogic.gdx.graphics.g2d.BitmapFont
 import com.badlogic.gdx.graphics.g2d.GlyphLayout
 import com.badlogic.gdx.graphics.g2d.SpriteBatch
@@ -244,10 +242,10 @@ class GameScreen(private val game: StrategyGame) : ScreenAdapter() {
         diplomacyLabel = Label(Locale.DIPLOMACY, skin)
         diplomacyLabel.color = Color.CYAN
         diploPanel.add(diplomacyLabel).colspan(2).row()
-        diploPanel.add(diploBtn("Alliance", Actions.DIPLO_ALLIANCE)).fillX()
-        diploPanel.add(diploBtn("Break", Actions.DIPLO_BREAK)).fillX().row()
-        diploPanel.add(diploBtn("Trade", Actions.DIPLO_TRADE)).fillX()
-        diploPanel.add(diploBtn("Cancel", Actions.DIPLO_CANCEL_TRADE)).fillX().row()
+        diploPanel.add(diploBtn(Locale.DIPLO_ALLIANCE, Actions.DIPLO_ALLIANCE)).fillX()
+        diploPanel.add(diploBtn(Locale.DIPLO_BREAK, Actions.DIPLO_BREAK)).fillX().row()
+        diploPanel.add(diploBtn(Locale.DIPLO_TRADE, Actions.DIPLO_TRADE)).fillX()
+        diploPanel.add(diploBtn(Locale.DIPLO_CANCEL_TRADE, Actions.DIPLO_CANCEL_TRADE)).fillX().row()
 
         val techPanel = Table(skin).apply { left().bottom().pad(10f); defaults().pad(2f) }
         techLabel = Label(Locale.TECHS, skin)
@@ -305,12 +303,12 @@ class GameScreen(private val game: StrategyGame) : ScreenAdapter() {
 
     private fun updateInfoLabel() {
         val r = selectedRegion
-        val player = state.currentPlayer()
+        val player = state.currentPlayer() ?: return
         val myTerritories = state.map.regions.count { it.ownerId == 0 }
         val enemyTerritories = state.map.regions.count { it.ownerId == 1 }
         val myPop = state.map.regions.filter { it.ownerId == 0 }.sumOf { it.population }
         val enemyPop = state.map.regions.filter { it.ownerId == 1 }.sumOf { it.population }
-        val income = Economy.calculateIncome(player!!, state.map)
+        val income = Economy.calculateIncome(player, state.map)
         val upkeep = Economy.upkeepCost(player, state.map)
 
         val diplo = state.diplomacy.getRelation(state.currentPlayerId, 1)
@@ -348,7 +346,7 @@ class GameScreen(private val game: StrategyGame) : ScreenAdapter() {
         }
         val isMyTurn = state.currentPlayerId == 0
         statusLabel.setText(
-            "${Locale.TURN} ${state.turn} | ${player?.name ?: "?"}\n" +
+            "${Locale.TURN} ${state.turn} | ${player.name}\n" +
             "${Locale.TERRITORIES}: ${Locale.YOURS} $myTerritories vs $enemyTerritories\n" +
             "${Locale.POPULATION}: ${Locale.YOURS} $myPop vs $enemyPop\n" +
             "${Locale.INCOME}: +${income.food}F +${income.wood}W +${income.stone}S +${income.gold}G | ${Locale.UPKEEP}: -${upkeep.food}F\n" +
@@ -442,7 +440,7 @@ class GameScreen(private val game: StrategyGame) : ScreenAdapter() {
                         } else { statusLabel.setText(Locale.LOAD_FAILED); statusLabel.color = Color.RED }
                     }
                 })
-                val trashRegion = makeTrashIcon()
+                val trashRegion = SkinFactory.makeTrashIcon()
                 val delStyle = com.badlogic.gdx.scenes.scene2d.ui.ImageButton.ImageButtonStyle()
                 delStyle.imageUp = NinePatchDrawable(com.badlogic.gdx.graphics.g2d.NinePatch(trashRegion.texture, 0, 0, 0, 0))
                 delStyle.imageDown = NinePatchDrawable(com.badlogic.gdx.graphics.g2d.NinePatch(trashRegion.texture, 0, 0, 0, 0))
@@ -487,15 +485,6 @@ class GameScreen(private val game: StrategyGame) : ScreenAdapter() {
             stage.addActor(w); win = w
         }
         rebuildList(saves)
-    }
-
-    private fun makeTrashIcon(): com.badlogic.gdx.graphics.g2d.TextureRegion {
-        val p = com.badlogic.gdx.graphics.Pixmap(24, 24, com.badlogic.gdx.graphics.Pixmap.Format.RGBA8888)
-        p.setColor(Color(0.9f, 0.2f, 0.2f, 1f))
-        p.fillRectangle(5, 4, 14, 3); p.fillRectangle(7, 7, 2, 14); p.fillRectangle(11, 7, 2, 14)
-        p.fillRectangle(15, 7, 2, 14); p.fillRectangle(3, 18, 18, 3); p.fillRectangle(9, 1, 6, 4)
-        val t = com.badlogic.gdx.graphics.Texture(p); p.dispose()
-        return com.badlogic.gdx.graphics.g2d.TextureRegion(t)
     }
 
     private fun handleAction(actionType: String) {
@@ -639,11 +628,7 @@ class GameScreen(private val game: StrategyGame) : ScreenAdapter() {
 
             if (gameInput.isPanning) {
                 if (!Gdx.input.isButtonPressed(1) && !Gdx.input.isButtonPressed(2)) {
-                } else {
-                    camera.translate(
-                        (Gdx.input.x.toFloat() - Gdx.input.x.toFloat()) * 1.5f * camera.zoom,
-                        (Gdx.input.y.toFloat() - Gdx.input.y.toFloat()) * 1.5f * camera.zoom
-                    )
+                    gameInput.cancelPanning()
                 }
             }
 
@@ -686,41 +671,5 @@ class GameScreen(private val game: StrategyGame) : ScreenAdapter() {
     override fun resize(width: Int, height: Int) { camera.viewportWidth = width.toFloat(); camera.viewportHeight = height.toFloat(); camera.update(); stage.viewport.update(width, height, true) }
     override fun dispose() { batch.dispose(); shapeRenderer.dispose(); soundManager?.dispose(); mapRenderer.dispose(); stage.dispose(); skin.dispose() }
 
-    private fun createSkin(): Skin {
-        val s = Skin()
-        val font = generateFont()
-        s.add("default-font", font, BitmapFont::class.java)
-        val upPix = com.badlogic.gdx.graphics.Pixmap(4, 4, com.badlogic.gdx.graphics.Pixmap.Format.RGBA8888).apply { setColor(Color(0.25f, 0.25f, 0.3f, 0.9f)); fill() }
-        val downPix = com.badlogic.gdx.graphics.Pixmap(4, 4, com.badlogic.gdx.graphics.Pixmap.Format.RGBA8888).apply { setColor(Color(0.35f, 0.35f, 0.4f, 1f)); fill() }
-        val overPix = com.badlogic.gdx.graphics.Pixmap(4, 4, com.badlogic.gdx.graphics.Pixmap.Format.RGBA8888).apply { setColor(Color(0.3f, 0.3f, 0.35f, 1f)); fill() }
-        val upTex = com.badlogic.gdx.graphics.Texture(upPix); upPix.dispose()
-        val downTex = com.badlogic.gdx.graphics.Texture(downPix); downPix.dispose()
-        val overTex = com.badlogic.gdx.graphics.Texture(overPix); overPix.dispose()
-        s.add("default", TextButton.TextButtonStyle().apply { this.font = font; fontColor = Color.WHITE; up = NinePatchDrawable(com.badlogic.gdx.graphics.g2d.NinePatch(upTex, 2, 2, 2, 2)); down = NinePatchDrawable(com.badlogic.gdx.graphics.g2d.NinePatch(downTex, 2, 2, 2, 2)); over = NinePatchDrawable(com.badlogic.gdx.graphics.g2d.NinePatch(overTex, 2, 2, 2, 2)) })
-        s.add("default", Label.LabelStyle(font, Color.WHITE))
-        val windowBgPix = com.badlogic.gdx.graphics.Pixmap(32, 32, com.badlogic.gdx.graphics.Pixmap.Format.RGBA8888).apply { setColor(0.08f, 0.09f, 0.14f, 1f); fill() }
-        val windowBgTex = com.badlogic.gdx.graphics.Texture(windowBgPix); windowBgPix.dispose()
-        val windowBg = NinePatchDrawable(com.badlogic.gdx.graphics.g2d.NinePatch(windowBgTex, 4, 4, 4, 4))
-        s.add("default", Window.WindowStyle(font, Color.CYAN, windowBg))
-        s.add("default", TextField.TextFieldStyle().apply { this.font = font; fontColor = Color.WHITE; background = windowBg; cursor = NinePatchDrawable(com.badlogic.gdx.graphics.g2d.NinePatch(upTex, 1, 1, 1, 1)); selection = NinePatchDrawable(com.badlogic.gdx.graphics.g2d.NinePatch(upTex, 1, 1, 1, 1)) })
-        val listSelTex = com.badlogic.gdx.graphics.Texture(com.badlogic.gdx.graphics.Pixmap(1, 1, com.badlogic.gdx.graphics.Pixmap.Format.RGBA8888).apply { setColor(0.3f, 0.5f, 0.7f, 1f); fill() })
-        val listStyle = com.badlogic.gdx.scenes.scene2d.ui.List.ListStyle()
-        listStyle.javaClass.getDeclaredField("font").apply { isAccessible = true }.set(listStyle, font)
-        listStyle.selection = NinePatchDrawable(com.badlogic.gdx.graphics.g2d.NinePatch(listSelTex, 0, 0, 0, 0))
-        listStyle.fontColorSelected = Color.WHITE; listStyle.fontColorUnselected = Color.LIGHT_GRAY
-        s.add("default", listStyle)
-        s.add("default", com.badlogic.gdx.scenes.scene2d.ui.ScrollPane.ScrollPaneStyle().apply { background = windowBg; vScroll = NinePatchDrawable(com.badlogic.gdx.graphics.g2d.NinePatch(upTex, 1, 1, 1, 1)); hScroll = NinePatchDrawable(com.badlogic.gdx.graphics.g2d.NinePatch(upTex, 1, 1, 1, 1)); vScrollKnob = NinePatchDrawable(com.badlogic.gdx.graphics.g2d.NinePatch(downTex, 1, 1, 1, 1)); hScrollKnob = NinePatchDrawable(com.badlogic.gdx.graphics.g2d.NinePatch(downTex, 1, 1, 1, 1)) })
-        return s
-    }
-
-    private fun generateFont(): BitmapFont {
-        val fontPaths = arrayOf("/System/Library/Fonts/Supplemental/Arial.ttf", "/System/Library/Fonts/Helvetica.ttc", "/Library/Fonts/Arial.ttf")
-        var generator: com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator? = null
-        for (path in fontPaths) { if (java.io.File(path).exists()) { generator = com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator(Gdx.files.absolute(path)); break } }
-        if (generator == null) generator = com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator(Gdx.files.absolute(fontPaths[0]))
-        val params = com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator.FreeTypeFontParameter()
-        params.size = 16; params.minFilter = com.badlogic.gdx.graphics.Texture.TextureFilter.Linear; params.magFilter = com.badlogic.gdx.graphics.Texture.TextureFilter.Linear
-        params.characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.,*':?!@#$%&()-+=/<>" + "абвгдеёжзийклмнопрстуфхцчшщъыьэюяАБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ" + "äöüÄÖÜß «»—…"
-        val font = generator.generateFont(params); generator.dispose(); return font
-    }
+    private fun createSkin(): Skin = SkinFactory.createSkin()
 }

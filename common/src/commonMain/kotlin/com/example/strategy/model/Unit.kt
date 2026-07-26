@@ -66,13 +66,8 @@ data class UnitStack(
         for (u in units) {
             val halfCount = u.count / 2
             val remainder = u.count - halfCount
-            if (half) {
-                a.add(u.copy(count = halfCount))
-                b.add(u.copy(count = remainder))
-            } else {
-                a.add(u.copy(count = halfCount))
-                b.add(u.copy(count = remainder))
-            }
+            a.add(u.copy(count = halfCount))
+            b.add(u.copy(count = remainder))
         }
         return UnitStack(a.filter { it.count > 0 }) to UnitStack(b.filter { it.count > 0 })
     }
