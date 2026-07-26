@@ -177,7 +177,11 @@ class GameInput(
     }
 
     fun calculateReachable(sourceId: Int) {
-        reachableRegions = com.example.strategy.pathfinding.AStar.findReachableRegions(stateProvider().map, sourceId)
+        val state = stateProvider()
+        val player = state.currentPlayer()
+        val hasHorseback = player?.techs?.isResearched(com.example.strategy.model.TechType.HORSEBACK) == true
+        val maxCost = if (hasHorseback) 10 else 8
+        reachableRegions = com.example.strategy.pathfinding.AStar.findReachableRegions(state.map, sourceId, maxCost)
     }
 
     fun clearReachable() {

@@ -123,7 +123,8 @@ object GameRules {
         var defenseStrength = targetRegion.population + targetRegion.units.totalDefense()
         val wallCount = targetRegion.buildings.count { it.type == BuildingType.WALL }
         var wallBonus = wallCount * 5
-        if (player.techs.isResearched(TechType.FORTIFICATION)) wallBonus = wallCount * 10
+        val defender = gameState.players.find { it.id == targetRegion.ownerId }
+        if (defender?.techs?.isResearched(TechType.FORTIFICATION) == true) wallBonus = wallCount * 10
 
         var attackPower = attackStrength
         val siegeCount = sourceRegion.units.units.find { it.type == UnitType.SIEGE }?.count ?: 0
