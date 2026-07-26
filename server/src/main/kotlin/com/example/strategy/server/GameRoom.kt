@@ -63,8 +63,8 @@ class GameRoom(val id: String) {
         val gameAction = com.example.strategy.logic.ActionQueue.GameAction(
             playerId, actionType, action.targetRegionId, action.param
         )
-        com.example.strategy.logic.ActionQueue.enqueue(gameAction)
-        state = com.example.strategy.logic.ActionQueue.processAll(state)
+        com.example.strategy.logic.ActionQueue.DEFAULT.enqueue(gameAction)
+        state = com.example.strategy.logic.ActionQueue.DEFAULT.processAll(state)
         broadcast(ServerMessage.ActionApplied(state))
     }
 
@@ -88,8 +88,8 @@ class GameRoom(val id: String) {
             val action = com.example.strategy.logic.ActionQueue.GameAction(
                 state.currentPlayerId, aiAction.actionType, aiAction.targetRegionId, aiAction.param
             )
-            com.example.strategy.logic.ActionQueue.enqueue(action)
-            state = com.example.strategy.logic.ActionQueue.processAll(state)
+            com.example.strategy.logic.ActionQueue.DEFAULT.enqueue(action)
+            state = com.example.strategy.logic.ActionQueue.DEFAULT.processAll(state)
         }
     }
 

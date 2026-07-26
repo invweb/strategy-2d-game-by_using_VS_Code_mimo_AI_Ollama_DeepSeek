@@ -86,8 +86,7 @@ Strategy/
         ├── SaveManager.kt           # Система сохранений
         ├── AnimationManager.kt      # Анимации атаки/перемещения
         ├── SoundManager.kt          # Процедурные звуковые эффекты
-        ├── HexGridRenderer.kt       # Рендеринг гексагональной сетки
-        ├── MiniMap.kt               # Рендеринг миникарты
+        │   ├── NetworkGameScreen.kt    # Network multiplayer screen        ├── MiniMap.kt               # Рендеринг миникарты
         └── TilesetGenerator.kt      # Генерация тайлсета в рантайме
 ```
 

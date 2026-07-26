@@ -86,7 +86,7 @@ Strategy/
         ├── SaveManager.kt           # Benanntes Speicher/Lade-System
         ├── AnimationManager.kt      # Angriffs/Bewegungsanimationen
         ├── SoundManager.kt          # Prozedurische Soundeffekte
-        ├── HexGridRenderer.kt       # Hexagonales Raster-Rendering
+
         ├── MiniMap.kt               # Minikarten-Rendering
         └── TilesetGenerator.kt      # Laufzeit-Tileset-Generierung
 ```
@@ -213,7 +213,6 @@ Wenn Sie **ZUG BEENDEN** drücken:
 
 ## Bekannte Probleme
 
-- Multiplayer wird nicht unterstützt (nur Einzelspiel gegen KI)
 - Ollama/LM Studio-Aufrufe können die UI kurzzeitig einfrieren, wenn der Server langsam antwortet (durch asynchrone KI reduziert, aber Timeout kann immer noch zu kurzen Pausen führen)
 
 ## Änderungsprotokoll

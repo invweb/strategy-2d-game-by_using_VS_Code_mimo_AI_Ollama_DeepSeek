@@ -1,5 +1,6 @@
 plugins {
     kotlin("jvm")
+    kotlin("plugin.serialization")
     application
 }
 
@@ -15,6 +16,7 @@ dependencies {
     implementation("io.ktor:ktor-serialization-kotlinx-json:$ktorVersion")
     implementation("ch.qos.logback:logback-classic:1.5.12")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:$serializationVersion")
+    testImplementation(kotlin("test"))
 }
 
 kotlin {

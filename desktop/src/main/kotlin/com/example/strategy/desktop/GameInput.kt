@@ -83,8 +83,8 @@ class GameInput(
                         soundPlayer(SoundManager.SoundType.ATTACK)
                     }
                     val action = ActionQueue.GameAction(stateProvider().currentPlayerId, ActionQueue.ActionType.ATTACK, region.id, attackSourceIdProvider().toString())
-                    ActionQueue.enqueue(action)
-                    stateSetter(ActionQueue.processAll(stateProvider()))
+                    ActionQueue.DEFAULT.enqueue(action)
+                    stateSetter(ActionQueue.DEFAULT.processAll(stateProvider()))
                     attackModeSetter(false); attackSourceIdSetter(-1)
                     actionUsedThisTurnSetter(true)
                     selectedRegionSetter(stateProvider().map.getRegionById(region.id))
@@ -94,8 +94,8 @@ class GameInput(
 
                 if (moveModeProvider() && region != null && region.ownerId == stateProvider().currentPlayerId && region.id != moveSourceIdProvider() && region.terrain != TerrainType.WATER) {
                     val action = ActionQueue.GameAction(stateProvider().currentPlayerId, ActionQueue.ActionType.MOVE_TROOPS, moveSourceIdProvider(), region.id.toString())
-                    ActionQueue.enqueue(action)
-                    stateSetter(ActionQueue.processAll(stateProvider()))
+                    ActionQueue.DEFAULT.enqueue(action)
+                    stateSetter(ActionQueue.DEFAULT.processAll(stateProvider()))
                     moveModeSetter(false); moveSourceIdSetter(-1)
                     actionUsedThisTurnSetter(true)
                     selectedRegionSetter(stateProvider().map.getRegionById(region.id))

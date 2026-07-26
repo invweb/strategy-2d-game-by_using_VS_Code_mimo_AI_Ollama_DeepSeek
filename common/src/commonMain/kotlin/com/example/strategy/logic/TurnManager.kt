@@ -29,7 +29,7 @@ object TurnManager {
     }
 
     fun endTurn(gameState: GameState): GameState {
-        val processed = ActionQueue.processAll(gameState)
+        val processed = ActionQueue.DEFAULT.processAll(gameState)
         val currentIndex = processed.players.indexOfFirst { it.id == processed.currentPlayerId }
         val wrapped = currentIndex + 1 >= processed.players.size
         val nextPlayerId = if (wrapped) processed.players.first().id

@@ -275,7 +275,7 @@ class NetworkGameScreen(
             if (actionType.startsWith("DIPLO_")) { handleDiploAction(actionType); return }
             if (actionType.startsWith(Actions.RESEARCH + ":")) {
                 val action = ActionQueue.GameAction(state.currentPlayerId, ActionQueue.ActionType.RESEARCH, 0, actionType.removePrefix(Actions.RESEARCH + ":"))
-                ActionQueue.enqueue(action); state = ActionQueue.processAll(state)
+                ActionQueue.DEFAULT.enqueue(action); state = ActionQueue.DEFAULT.processAll(state)
                 game.gameState = state; actionUsedThisTurn = true
                 soundManager?.play(SoundManager.SoundType.RESEARCH)
                 networkClient.sendGameState(state, "ActionApplied")
@@ -308,7 +308,7 @@ class NetworkGameScreen(
                 Actions.DEVELOP -> ActionQueue.GameAction(state.currentPlayerId, ActionQueue.ActionType.DEVELOP, region.id)
                 else -> return
             }
-            ActionQueue.enqueue(action); state = ActionQueue.processAll(state)
+        ActionQueue.DEFAULT.enqueue(action); state = ActionQueue.DEFAULT.processAll(state)
             game.gameState = state; selectedRegion = state.map.getRegionById(region.id); actionUsedThisTurn = true
             networkClient.sendGameState(state, "ActionApplied")
             updateInfoLabel()
@@ -326,7 +326,7 @@ class NetworkGameScreen(
             Actions.DIPLO_CANCEL_TRADE -> ActionQueue.GameAction(state.currentPlayerId, ActionQueue.ActionType.CANCEL_TRADE, 1)
             else -> return
         }
-        ActionQueue.enqueue(action); state = ActionQueue.processAll(state)
+        ActionQueue.DEFAULT.enqueue(action); state = ActionQueue.DEFAULT.processAll(state)
         game.gameState = state; actionUsedThisTurn = true
         soundManager?.play(SoundManager.SoundType.ALLIANCE)
         networkClient.sendGameState(state, "ActionApplied")

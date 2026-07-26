@@ -2,9 +2,12 @@ package com.example.strategy.platform
 
 import com.example.strategy.model.*
 import com.example.strategy.serialization.GameStateSerializer
+import kotlin.random.Random
 
 // Default game state factory — creates initial game world
 object GameFactory {
+
+    private val terrainSeed = Random.nextLong()
 
     enum class MapSize(val w: Int, val h: Int) {
         SMALL(8, 6),
@@ -35,7 +38,7 @@ object GameFactory {
             for (x in 0 until w) {
                 val terrain = when {
                     x == 0 || y == 0 || x == w - 1 || y == h - 1 -> TerrainType.WATER
-                    else -> generateTerrain(x, y, terrainStyle)
+                    else -> generateTerrain(x, y, terrainStyle, w, h)
                 }
 
                 val owner = when {
@@ -82,32 +85,69 @@ object GameFactory {
         )
     }
 
-    private fun generateTerrain(x: Int, y: Int, style: TerrainStyle): TerrainType {
-        val noise = (x * 7 + y * 13 + x * y * 3) % 10
+    private fun generateTerrain(x: Int, y: Int, style: TerrainStyle, w: Int, h: Int): TerrainType {
+        val perlin = PerlinNoise(terrainSeed)
+        val nx = x.toDouble() / w
+        val ny = y.toDouble() / h
+        val elevation = perlin.octaveNoise(nx * 4, ny * 4, 4, 0.5)
+        val moisture = perlin.octaveNoise(nx * 3 + 100, ny * 3 + 100, 3, 0.5)
+
+        val e = (elevation + 1) / 2.0
+        val m = (moisture + 1) / 2.0
+
         return when (style) {
             TerrainStyle.BALANCED -> when {
-                noise % 5 == 0 -> TerrainType.MOUNTAIN
-                noise % 4 == 0 -> TerrainType.FOREST
-                noise % 3 == 0 -> TerrainType.HILLS
-                else -> TerrainType.PLAINS
+                e < 0.25 -> TerrainType.WATER
+                e < 0.35 -> TerrainType.SWAMP
+                e < 0.50 -> when {
+                    m > 0.65 -> TerrainType.FOREST
+                    m < 0.30 -> TerrainType.DESERT
+                    else -> TerrainType.PLAINS
+                }
+                e < 0.65 -> when {
+                    m > 0.60 -> TerrainType.FOREST
+                    else -> TerrainType.HILLS
+                }
+                e < 0.80 -> TerrainType.MOUNTAIN
+                else -> TerrainType.SNOW
             }
             TerrainStyle.FOREST_HEAVY -> when {
-                noise % 6 == 0 -> TerrainType.MOUNTAIN
-                noise < 5 -> TerrainType.FOREST
-                noise % 3 == 0 -> TerrainType.HILLS
-                else -> TerrainType.PLAINS
+                e < 0.20 -> TerrainType.WATER
+                e < 0.30 -> TerrainType.SWAMP
+                e < 0.55 -> when {
+                    m > 0.40 -> TerrainType.FOREST
+                    else -> TerrainType.PLAINS
+                }
+                e < 0.70 -> when {
+                    m > 0.35 -> TerrainType.FOREST
+                    else -> TerrainType.HILLS
+                }
+                e < 0.85 -> TerrainType.MOUNTAIN
+                else -> TerrainType.SNOW
             }
             TerrainStyle.MOUNTAINOUS -> when {
-                noise < 4 -> TerrainType.MOUNTAIN
-                noise % 3 == 0 -> TerrainType.HILLS
-                noise % 4 == 0 -> TerrainType.FOREST
-                else -> TerrainType.PLAINS
+                e < 0.20 -> TerrainType.WATER
+                e < 0.30 -> TerrainType.SWAMP
+                e < 0.45 -> when {
+                    m > 0.60 -> TerrainType.FOREST
+                    m < 0.35 -> TerrainType.DESERT
+                    else -> TerrainType.PLAINS
+                }
+                e < 0.60 -> TerrainType.HILLS
+                e < 0.80 -> TerrainType.MOUNTAIN
+                else -> TerrainType.SNOW
             }
             TerrainStyle.PLAINS_DOMINANT -> when {
-                noise % 7 == 0 -> TerrainType.MOUNTAIN
-                noise % 5 == 0 -> TerrainType.FOREST
-                noise % 4 == 0 -> TerrainType.HILLS
-                else -> TerrainType.PLAINS
+                e < 0.25 -> TerrainType.WATER
+                e < 0.35 -> TerrainType.SWAMP
+                e < 0.60 -> when {
+                    m > 0.75 -> TerrainType.FOREST
+                    m < 0.25 -> TerrainType.DESERT
+                    else -> TerrainType.PLAINS
+                }
+                e < 0.75 -> TerrainType.HILLS
+                e < 0.85 -> TerrainType.MOUNTAIN
+                else -> TerrainType.SNOW
             }
         }
     }

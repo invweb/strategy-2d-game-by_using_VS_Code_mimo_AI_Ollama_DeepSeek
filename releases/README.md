@@ -86,8 +86,7 @@ Strategy/
         ├── SaveManager.kt           # Named save/load system
         ├── AnimationManager.kt      # Attack/move animations
         ├── SoundManager.kt          # Procedural sound effects
-        ├── HexGridRenderer.kt       # Hex grid rendering
-        ├── MiniMap.kt               # Minimap rendering
+        │   ├── NetworkGameScreen.kt    # Network multiplayer screen        ├── MiniMap.kt               # Minimap rendering
         └── TilesetGenerator.kt      # Runtime tileset generation
 ```
 
@@ -213,7 +212,6 @@ When you press **END TURN**:
 
 ## Known Issues
 
-- Multiplayer is not supported (single player vs AI only)
 - Ollama/LM Studio calls may briefly freeze the UI if the server is slow to respond (reduced by async AI, but timeout can still cause brief pauses)
 
 ## Changelog

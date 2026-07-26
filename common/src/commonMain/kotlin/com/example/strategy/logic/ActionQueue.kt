@@ -3,7 +3,7 @@ package com.example.strategy.logic
 import com.example.strategy.model.GameState
 import com.example.strategy.model.UnitType
 
-object ActionQueue {
+class ActionQueue {
 
     data class GameAction(
         val playerId: Int,
@@ -63,5 +63,9 @@ object ActionQueue {
     @Synchronized
     fun clear() {
         pendingActions.clear()
+    }
+
+    companion object {
+        val DEFAULT = ActionQueue()
     }
 }

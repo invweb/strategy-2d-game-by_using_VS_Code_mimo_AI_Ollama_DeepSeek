@@ -21,11 +21,25 @@ object Economy {
                 TerrainType.HILLS -> 2
                 TerrainType.MOUNTAIN -> 1
                 TerrainType.WATER -> 0
+                TerrainType.DESERT -> 1
+                TerrainType.SWAMP -> 1
+                TerrainType.SNOW -> 0
             }
-            wood += if (region.terrain == TerrainType.FOREST) 3 else 0
+            wood += when (region.terrain) {
+                TerrainType.FOREST -> 3
+                TerrainType.SWAMP -> 2
+                else -> 0
+            }
             stone += if (region.terrain == TerrainType.MOUNTAIN || region.terrain == TerrainType.HILLS) 2 else 0
-            iron += if (region.terrain == TerrainType.MOUNTAIN) 1 else 0
-            gold += pop / 10
+            iron += when (region.terrain) {
+                TerrainType.MOUNTAIN -> 1
+                TerrainType.SNOW -> 1
+                else -> 0
+            }
+            gold += when (region.terrain) {
+                TerrainType.DESERT -> (pop / 8) + 1
+                else -> pop / 10
+            }
 
             for (building in region.buildings) {
                 when (building.type) {
@@ -69,6 +83,13 @@ object Economy {
         val ownedRegions = gameMap.regions.filter { it.ownerId == player.id }
         val totalPopulation = ownedRegions.sumOf { it.population }
         val foodUpkeep = totalPopulation / 5
-        return Resources(food = foodUpkeep)
+        val extraUpkeep: Int = ownedRegions.sumOf { region: Region ->
+            when (region.terrain) {
+                TerrainType.SNOW -> 1
+                TerrainType.SWAMP -> 1
+                else -> 0
+            }.toLong()
+        }.toInt()
+        return Resources(food = foodUpkeep + extraUpkeep)
     }
 }
