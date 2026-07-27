@@ -280,6 +280,15 @@ The game supports **two-player online mode** via WebSocket.
 
 ## Changelog
 
+### v0.4.0 (July 2026)
+- New tileset extraction tool: `tools/extract_tileset.py` for converting external tilesets
+- Support for larger external tilesets (64px tiles, 160+ tiles per image)
+- Improved terrain tile analysis with color-based classification
+- Backup build files added for safe build configuration changes
+- Tileset: 8 terrain types (48×384 px) - Plains, Forest, Mountain, Hills, Water, Desert, Swamp, Snow
+- Updated project configuration with test framework (JUnit Jupiter)
+- Plan file integration for gigacode session tracking
+
 ### v0.3.0 (July 2026)
 - Procedural terrain tiles with distinct patterns per biome
 - Movement range highlighting with A* flood fill
