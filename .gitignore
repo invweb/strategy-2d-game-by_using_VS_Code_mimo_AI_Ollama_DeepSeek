@@ -20,3 +20,14 @@ Thumbs.db
 savegame.json
 desktop/ai_prefs.txt
 desktop/saves/
+
+# Local properties
+local.properties
+
+# Backup files
+*.bak
+*.bak2
+*.bak3
+*.bak4
+*.bak5
+*.bak6

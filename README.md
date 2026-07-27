@@ -313,15 +313,39 @@ The game supports **two-player online mode** via WebSocket.
 - Animations, sounds, minimap
 - Map configuration, difficulty levels
 
+## Prerequisites
+
+Make sure you have Java 17 or higher installed:
+
+```bash
 ## Running
+
+### Prerequisites
+
+Make sure you have Java 17 or higher installed:
+
+```bash
+# macOS (Homebrew)
+brew install openjdk@17
+
+# Linux (Debian/Ubuntu)
+sudo apt install openjdk-17-jdk
+
+# Windows
+choco install openjdk
+```
+
+### Build and Run
 
 ```bash
 # Desktop
-export JAVA_HOME=/opt/homebrew/opt/openjdk@17
 ./gradlew desktop:run
 
 # Server (for multiplayer)
 ./gradlew :server:run
+
+# All modules (common tests, desktop build, server build)
+./gradlew build
 ```
 
 ## License
